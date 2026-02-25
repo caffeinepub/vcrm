@@ -50,6 +50,16 @@ export interface Deal {
     stage: DealStage;
     customerId: bigint;
 }
+export type OTPVerificationResult = {
+    __kind__: "expired";
+    expired: null;
+} | {
+    __kind__: "invalid";
+    invalid: null;
+} | {
+    __kind__: "success";
+    success: CreateUserStatus;
+};
 export interface SiteSurvey {
     date: Time;
     notes: string;
@@ -58,11 +68,17 @@ export interface SiteSurvey {
 export interface UserProfile {
     name: string;
     email: string;
+    phone: string;
 }
 export enum ApprovalStatus {
     pending = "pending",
     approved = "approved",
     rejected = "rejected"
+}
+export enum CreateUserStatus {
+    created = "created",
+    createdFirstAdmin = "createdFirstAdmin",
+    alreadyExists = "alreadyExists"
 }
 export enum DealStage {
     new_ = "new",
@@ -110,6 +126,7 @@ export interface backendInterface {
     deleteLead(id: bigint): Promise<void>;
     deleteReminder(id: bigint): Promise<void>;
     deleteSolarProject(id: bigint): Promise<void>;
+    generateOTP(email: string): Promise<string>;
     getAllCustomers(): Promise<Array<Customer>>;
     getAllDeals(): Promise<Array<Deal>>;
     getAllLeads(): Promise<Array<Lead>>;
@@ -140,7 +157,13 @@ export interface backendInterface {
     markReminderOverdue(id: bigint): Promise<void>;
     moveDealStage(id: bigint, stage: DealStage): Promise<Deal>;
     requestApproval(): Promise<void>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    saveCallerUserProfile(name: string, email: string, phone: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "error";
+        error: string;
+    }>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     updateCustomer(id: bigint, name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
     updateDeal(id: bigint, title: string, value: number, customerId: bigint, stage: DealStage): Promise<Deal>;
@@ -148,4 +171,5 @@ export interface backendInterface {
     updateProjectStatus(projectId: bigint, newStatus: ProjectStatus): Promise<SolarProject>;
     updateReminder(id: bigint, dueDate: Time, note: string): Promise<Reminder>;
     updateSolarProject(id: bigint, systemSizeKW: number, installationStatus: ProjectStatus, notes: string, surveyorName: string, date: Time): Promise<SolarProject>;
+    verifyOTP(email: string, otp: string): Promise<OTPVerificationResult>;
 }

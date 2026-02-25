@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useGetCallerUserProfile } from '../hooks/useQueries';
 import ProfileSetupModal from './ProfileSetupModal';
 import {
-  LayoutDashboard, Users, UserCheck, Briefcase, Bell, Sun, Shield, Menu, X, LogOut, Moon, ChevronRight,
+  LayoutDashboard, Users, UserCheck, Briefcase, Bell, Sun, Shield, Menu, X, LogOut, Moon, ChevronRight, UserCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +46,6 @@ export default function Layout() {
   }
 
   // Show loading screen while actor/identity is initializing or profile is still loading.
-  // We do NOT wait for admin/approval here — those can resolve after profile is known.
   const profileStillLoading = isAuthenticated && (profileLoading || !profileFetched);
 
   if (profileStillLoading) {
@@ -64,9 +63,7 @@ export default function Layout() {
     );
   }
 
-  // Profile setup: show modal when profile is confirmed null (not just loading).
-  // We show this BEFORE checking admin/approval — saving the profile is what
-  // bootstraps the first admin and grants roles.
+  // Profile setup: show modal when profile is confirmed null.
   const showProfileSetup = isAuthenticated && profileFetched && userProfile === null;
 
   if (showProfileSetup) {
@@ -168,15 +165,20 @@ export default function Layout() {
         {isAdmin && (
           <NavLink item={{ path: '/admin', label: 'Admin Panel', icon: Shield }} />
         )}
+        {/* Profile link */}
+        <NavLink item={{ path: '/profile', label: 'My Profile', icon: UserCircle }} />
       </nav>
 
       {/* User section */}
       <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
         {userProfile && (
-          <div className="px-3 py-2 rounded-lg bg-sidebar-accent/30">
+          <button
+            onClick={() => { navigate({ to: '/profile' }); setSidebarOpen(false); }}
+            className="w-full px-3 py-2 rounded-lg bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors text-left"
+          >
             <p className="text-xs font-medium text-sidebar-foreground truncate">{userProfile.name}</p>
             <p className="text-xs text-sidebar-foreground/50 truncate">{userProfile.email}</p>
-          </div>
+          </button>
         )}
         <div className="flex items-center gap-2">
           <Button
@@ -202,7 +204,6 @@ export default function Layout() {
   );
 
   // Only show Access Pending when we are CERTAIN the user is not an admin AND not approved.
-  // Both queries are fully fetched at this point, and the profile exists (setup is complete).
   if (isApprovedFetched && isAdminFetched && isApproved === false && isAdmin !== true) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">

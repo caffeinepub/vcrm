@@ -1,25 +1,119 @@
 import Map "mo:core/Map";
-import List "mo:core/List";
 import Text "mo:core/Text";
-import Time "mo:core/Time";
-import Runtime "mo:core/Runtime";
 import Float "mo:core/Float";
 import Principal "mo:core/Principal";
+import Runtime "mo:core/Runtime";
+import Time "mo:core/Time";
 import Iter "mo:core/Iter";
+import List "mo:core/List";
+import Migration "migration";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import UserApproval "user-approval/approval";
 
-
-// Setup access control on upgrade via with-clause
-
+// Use migration for data upgrade.
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   let approvalState = UserApproval.initState(accessControlState);
-
   var firstAdmin : ?Principal = null;
+
+  let otpValidDuration : Int = 10 * 60 * 1_000_000_000; // 10 minutes in nanoseconds
+
+  // ─── OTP Authentication ──────────────────────────────────────────────────────
+
+  public type CreateUserStatus = {
+    #created;
+    #alreadyExists;
+    #createdFirstAdmin;
+  };
+
+  public type OTPEntry = {
+    code : Text;
+    expiry : Time.Time;
+  };
+
+  let otpState = Map.empty<Text, OTPEntry>();
+  // Maps email -> Principal (the caller principal that verified the OTP)
+  let emailPrincipalMap = Map.empty<Text, Principal>();
+  // Maps Principal -> email for reverse lookup
+  let principalEmailMap = Map.empty<Principal, Text>();
+
+  public type OTPVerificationResult = {
+    #success : CreateUserStatus;
+    #invalid;
+    #expired;
+  };
+
+  // Generates a 6-digit numeric OTP, stores it with a 10-minute expiry, and
+  // returns the OTP for frontend simulation. This would normally be delivered
+  // via email in a real-world system.
+  // No authentication required — this is the entry point for the auth flow.
+  public shared ({ caller }) func generateOTP(email : Text) : async Text {
+    let otp = generateOTPCode();
+    let expiry = Time.now() + otpValidDuration;
+    otpState.add(email, { code = otp; expiry });
+    otp;
+  };
+
+  // Verifies the OTP for the given email. On success, associates the caller's
+  // principal with the email and sets up their role. The caller principal
+  // (from the IC identity) is used as the stable identity going forward.
+  // No authentication required — this IS the authentication step.
+  public shared ({ caller }) func verifyOTP(email : Text, otp : Text) : async OTPVerificationResult {
+    let storedOTP = switch (otpState.get(email)) {
+      case (?entry) { entry };
+      case (null) { return #invalid };
+    };
+
+    if (Time.now() > storedOTP.expiry) {
+      otpState.remove(email);
+      return #expired;
+    };
+
+    if (storedOTP.code != otp) {
+      return #invalid;
+    };
+
+    // OTP is valid — remove it so it cannot be reused
+    otpState.remove(email);
+
+    // Check if this email already has an associated principal
+    switch (emailPrincipalMap.get(email)) {
+      case (?existingPrincipal) {
+        // Email already registered; if the caller is different, update mapping
+        // (e.g. user switched identity providers). We keep the existing role.
+        if (existingPrincipal != caller) {
+          emailPrincipalMap.add(email, caller);
+          principalEmailMap.remove(existingPrincipal);
+          principalEmailMap.add(caller, email);
+        };
+        #success(#alreadyExists);
+      };
+      case (null) {
+        // New email — associate with caller principal
+        emailPrincipalMap.add(email, caller);
+        principalEmailMap.add(caller, email);
+
+        // Determine if this should be the first admin
+        switch (firstAdmin) {
+          case (null) {
+            firstAdmin := ?caller;
+            AccessControl.assignRole(accessControlState, caller, caller, #admin);
+            UserApproval.setApproval(approvalState, caller, #approved);
+            #success(#createdFirstAdmin);
+          };
+          case (?_) {
+            // Subsequent users get #user role; approval is pending by default
+            AccessControl.assignRole(accessControlState, caller, caller, #user);
+            #success(#created);
+          };
+        };
+      };
+    };
+  };
 
   // ─── User Approval Functions ─────────────────────────────────────────────────
 
@@ -31,7 +125,11 @@ actor {
     };
   };
 
+  // Any authenticated (non-anonymous) user can request approval.
   public shared ({ caller }) func requestApproval() : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot request approval");
+    };
     if (?caller == firstAdmin) {
       Runtime.trap("Error: First admin does not need approval");
     };
@@ -57,46 +155,78 @@ actor {
   public type UserProfile = {
     name : Text;
     email : Text;
+    phone : Text;
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
 
+  // Any authenticated (non-anonymous) user can read their own profile.
+  // New users may not yet have a role assigned when they first open the
+  // profile setup modal, so we only require non-anonymous identity.
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    // Allow the first admin (who may not yet have #user role assigned) to read their own profile.
-    if (not (?caller == firstAdmin or AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get their profile");
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot get profiles");
     };
     userProfiles.get(caller);
   };
 
+  // Admins can view any profile; users can only view their own.
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot view profiles");
+    };
     if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     userProfiles.get(user);
   };
 
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    // If no first admin has been set yet, this caller becomes the first admin.
-    // They are automatically assigned the admin role and marked as approved.
+  // Any authenticated (non-anonymous) user can save their own profile.
+  // This is the onboarding/registration step — new users may not yet have a
+  // role assigned, so we cannot gate this on #user role. After saving the
+  // profile we auto-assign the #user role (unless the caller is already an
+  // admin or is being bootstrapped as the first admin).
+  public shared ({ caller }) func saveCallerUserProfile(name : Text, email : Text, phone : Text) : async { #ok; #error : Text } {
+    if (caller.isAnonymous()) {
+      return #error("Unauthorized: Anonymous users cannot save profiles");
+    };
+
+    let profile : UserProfile = {
+      name;
+      email;
+      phone;
+    };
+
     switch (firstAdmin) {
       case (null) {
-        // Bootstrap: assign this caller as the first admin.
+        // Bootstrap: the very first caller becomes the first admin.
         firstAdmin := ?caller;
-        // Assign the admin role using the prefabricated access control system.
         AccessControl.assignRole(accessControlState, caller, caller, #admin);
-        // Mark the first admin as approved in the approval system.
         UserApproval.setApproval(approvalState, caller, #approved);
         userProfiles.add(caller, profile);
+        // Also record the email mapping if not already set via OTP
+        if (emailPrincipalMap.get(email) == null) {
+          emailPrincipalMap.add(email, caller);
+          principalEmailMap.add(caller, email);
+        };
       };
       case (?_) {
-        // All subsequent users must already have #user permission (i.e., be approved).
-        if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-          Runtime.trap("Unauthorized: Only users can save profiles");
-        };
+        // For all subsequent callers: save the profile and ensure they have
+        // at least the #user role so future authenticated calls succeed.
         userProfiles.add(caller, profile);
+        // Only assign #user role if the caller does not already have a
+        // higher role (admin). assignRole is safe to call multiple times.
+        if (not AccessControl.isAdmin(accessControlState, caller)) {
+          AccessControl.assignRole(accessControlState, caller, caller, #user);
+        };
+        // Also record the email mapping if not already set via OTP
+        if (emailPrincipalMap.get(email) == null) {
+          emailPrincipalMap.add(email, caller);
+          principalEmailMap.add(caller, email);
+        };
       };
     };
+    #ok;
   };
 
   // ─── Types ───────────────────────────────────────────────────────────────────
@@ -529,6 +659,7 @@ actor {
   };
 
   public shared ({ caller }) func adminAssignRole(user : Principal, role : AccessControl.UserRole) : async () {
+    // AccessControl.assignRole includes its own admin-only guard
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 
@@ -555,11 +686,24 @@ actor {
 
   // ─── Internal Helpers ────────────────────────────────────────────────────────
 
+  func generateOTPCode() : Text {
+    // Produces a deterministic 6-digit code based on current time.
+    // In production this would use a secure random source.
+    let t = Time.now();
+    let code = (t % 900_000) + 100_000;
+    // code is in range [100_000, 999_999]
+    let n = if (code < 0) { ((-code) % 900_000) + 100_000 } else { code };
+    Int.toText(n);
+  };
+
   // A caller is considered approved if they are:
   //   1. The recorded first admin principal, OR
   //   2. Have the #admin role in the access control system, OR
   //   3. Have been explicitly approved in the user-approval system.
   func assertCallerApproved(caller : Principal) {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous users cannot perform this action");
+    };
     if (?caller == firstAdmin) { return () };
     let isCallerAdmin = AccessControl.hasPermission(accessControlState, caller, #admin);
     let isUserApproved = UserApproval.isApproved(approvalState, caller);

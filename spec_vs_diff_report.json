@@ -1,48 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T16:46:22.214Z",
-  "summary": "Both REQ-24 and REQ-25 appear to be substantially implemented. ProfileSetupModal.tsx removes the 'Authentication failed / Log out and try again' path and shows only generic error messages. useQueries.ts adds typed 'actor_not_ready' errors. However, REQ-24 requires a silent retry mechanism (waiting up to a reasonable timeout before invoking saveCallerUserProfile), and REQ-25 requires fetching a fresh actor reference at call time rather than relying on a potentially stale closure — the diff still uses the hook-captured actor.",
+  "generatedAt": "2026-02-25T18:34:58.002Z",
+  "summary": "The diff implements the majority of the OTP-based login system and profile page requirements. REQ-45, REQ-46, REQ-47, REQ-48, and REQ-49 are largely addressed. However, several specific acceptance criteria have gaps: useUpdateCallerUserProfile uses saveCallerUserProfile (not a distinct updateCallerUserProfile backend function), fresh actor references via refs are only partially applied in OTP/profile hooks, and the redirect to profile setup on incomplete profile is not implemented.",
   "missing_requirements": [
     {
-      "id": "REQ-24",
-      "requirement": "On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile.",
-      "reason": "The diff does not implement a silent wait/retry loop on form submission. If the actor is not ready at submission time, the mutation immediately throws 'actor_not_ready'. There is no polling or timeout-based wait before the first invocation attempt — the user must manually click retry.",
+      "id": "REQ-47",
+      "requirement": "updateCallerUserProfile(name, email, phone) — a distinct backend function separate from saveCallerUserProfile — should be implemented and return #ok on success with appropriate #err variants.",
+      "reason": "The diff's useUpdateCallerUserProfile hook calls actor.saveCallerUserProfile rather than a distinct actor.updateCallerUserProfile function. There is no evidence of a separate updateCallerUserProfile function in backend/main.mo; the hook reuses the save path.",
       "evidence": [
         "frontend/src/hooks/useQueries.ts",
-        "frontend/src/components/ProfileSetupModal.tsx"
+        "backend/main.mo"
       ]
     },
     {
-      "id": "REQ-25",
-      "requirement": "The mutation always fetches the latest actor instance at invocation time rather than relying on a potentially stale closure.",
-      "reason": "The useSaveCallerUserProfile hook still captures actor and actorFetching from the useActor hook closure at render time. There is no mechanism to re-fetch or re-obtain a fresh actor reference at the moment mutationFn is actually invoked.",
+      "id": "REQ-49",
+      "requirement": "All hooks (useGenerateOTP, useVerifyOTP, useGetCallerUserProfile, useUpdateCallerUserProfile) use a freshly obtained actor reference at call time via refs, not a stale closure.",
+      "reason": "useGenerateOTP and useVerifyOTP capture actor from useActor() directly in the closure without using a ref pattern. Only useSaveCallerUserProfile uses the actorRef pattern. The requirement states all hooks must use a fresh actor reference at invocation time.",
       "evidence": [
         "frontend/src/hooks/useQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "requirement": "Successful OTP verification redirects to profile setup if the profile is incomplete.",
+      "reason": "The LoginPage.tsx shows both branches of the post-verification redirect navigate to '/dashboard' regardless of whether userProfile exists or not, so the 'redirect to Profile Setup if profile is incomplete' branch is not implemented.",
+      "evidence": [
+        "frontend/src/pages/LoginPage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Actor wait timer UI showing 'Connecting to backend… please wait.' after 2 seconds and a separate timed-out UI block after 12 seconds of actor unavailability.",
-      "reason": "The build request only asks for silent waiting before the first invocation attempt and generic error messaging. A visible countdown/loading indicator in the modal UI was not requested.",
+      "description": "A migration module (backend/migration.mo) was added to handle data upgrades from OldUserProfile to NewUserProfile with a phone field.",
+      "reason": "The build request does not mention any migration module or data upgrade strategy. This is extra infrastructure not requested.",
       "evidence": [
-        "frontend/src/components/ProfileSetupModal.tsx"
+        "backend/migration.mo"
       ]
     },
     {
-      "description": "A handleRetry function that invalidates the 'actor' query cache entry via queryClient.invalidateQueries.",
-      "reason": "Invalidating the actor query on retry was not specified in either REQ-24 or REQ-25.",
+      "description": "The sidebar footer user profile card is made clickable to navigate to /profile in addition to the sidebar nav link.",
+      "reason": "REQ-48 only requests a Profile link in the sidebar navigation. Making the profile card in the sidebar footer also a navigation target was not requested.",
       "evidence": [
-        "frontend/src/components/ProfileSetupModal.tsx"
+        "frontend/src/components/Layout.tsx"
       ]
     }
   ],
-  "confidence": 0.78,
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/Layout.tsx",
     "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
   ]
 }

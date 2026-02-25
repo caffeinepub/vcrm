@@ -79,6 +79,7 @@ export const UserRole = IDL.Variant({
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
+  'phone' : IDL.Text,
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -88,6 +89,16 @@ export const ApprovalStatus = IDL.Variant({
 export const UserApprovalInfo = IDL.Record({
   'status' : ApprovalStatus,
   'principal' : IDL.Principal,
+});
+export const CreateUserStatus = IDL.Variant({
+  'created' : IDL.Null,
+  'createdFirstAdmin' : IDL.Null,
+  'alreadyExists' : IDL.Null,
+});
+export const OTPVerificationResult = IDL.Variant({
+  'expired' : IDL.Null,
+  'invalid' : IDL.Null,
+  'success' : CreateUserStatus,
 });
 
 export const idlService = IDL.Service({
@@ -127,6 +138,7 @@ export const idlService = IDL.Service({
   'deleteLead' : IDL.Func([IDL.Nat], [], []),
   'deleteReminder' : IDL.Func([IDL.Nat], [], []),
   'deleteSolarProject' : IDL.Func([IDL.Nat], [], []),
+  'generateOTP' : IDL.Func([IDL.Text], [IDL.Text], []),
   'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
   'getAllDeals' : IDL.Func([], [IDL.Vec(Deal)], ['query']),
   'getAllLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
@@ -175,7 +187,11 @@ export const idlService = IDL.Service({
   'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
   'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
   'requestApproval' : IDL.Func([], [], []),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'saveCallerUserProfile' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'error' : IDL.Text })],
+      [],
+    ),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
   'updateCustomer' : IDL.Func(
       [
@@ -211,6 +227,7 @@ export const idlService = IDL.Service({
       [SolarProject],
       [],
     ),
+  'verifyOTP' : IDL.Func([IDL.Text, IDL.Text], [OTPVerificationResult], []),
 });
 
 export const idlInitArgs = [];
@@ -284,7 +301,11 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text, 'email' : IDL.Text });
+  const UserProfile = IDL.Record({
+    'name' : IDL.Text,
+    'email' : IDL.Text,
+    'phone' : IDL.Text,
+  });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
     'approved' : IDL.Null,
@@ -293,6 +314,16 @@ export const idlFactory = ({ IDL }) => {
   const UserApprovalInfo = IDL.Record({
     'status' : ApprovalStatus,
     'principal' : IDL.Principal,
+  });
+  const CreateUserStatus = IDL.Variant({
+    'created' : IDL.Null,
+    'createdFirstAdmin' : IDL.Null,
+    'alreadyExists' : IDL.Null,
+  });
+  const OTPVerificationResult = IDL.Variant({
+    'expired' : IDL.Null,
+    'invalid' : IDL.Null,
+    'success' : CreateUserStatus,
   });
   
   return IDL.Service({
@@ -340,6 +371,7 @@ export const idlFactory = ({ IDL }) => {
     'deleteLead' : IDL.Func([IDL.Nat], [], []),
     'deleteReminder' : IDL.Func([IDL.Nat], [], []),
     'deleteSolarProject' : IDL.Func([IDL.Nat], [], []),
+    'generateOTP' : IDL.Func([IDL.Text], [IDL.Text], []),
     'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
     'getAllDeals' : IDL.Func([], [IDL.Vec(Deal)], ['query']),
     'getAllLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
@@ -392,7 +424,11 @@ export const idlFactory = ({ IDL }) => {
     'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
     'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
     'requestApproval' : IDL.Func([], [], []),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'saveCallerUserProfile' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'error' : IDL.Text })],
+        [],
+      ),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
     'updateCustomer' : IDL.Func(
         [
@@ -428,6 +464,7 @@ export const idlFactory = ({ IDL }) => {
         [SolarProject],
         [],
       ),
+    'verifyOTP' : IDL.Func([IDL.Text, IDL.Text], [OTPVerificationResult], []),
   });
 };
 

@@ -132,6 +132,16 @@ export interface Deal {
     stage: DealStage;
     customerId: bigint;
 }
+export type OTPVerificationResult = {
+    __kind__: "expired";
+    expired: null;
+} | {
+    __kind__: "invalid";
+    invalid: null;
+} | {
+    __kind__: "success";
+    success: CreateUserStatus;
+};
 export interface SiteSurvey {
     date: Time;
     notes: string;
@@ -140,11 +150,17 @@ export interface SiteSurvey {
 export interface UserProfile {
     name: string;
     email: string;
+    phone: string;
 }
 export enum ApprovalStatus {
     pending = "pending",
     approved = "approved",
     rejected = "rejected"
+}
+export enum CreateUserStatus {
+    created = "created",
+    createdFirstAdmin = "createdFirstAdmin",
+    alreadyExists = "alreadyExists"
 }
 export enum DealStage {
     new_ = "new",
@@ -193,6 +209,7 @@ export interface backendInterface {
     deleteLead(id: bigint): Promise<void>;
     deleteReminder(id: bigint): Promise<void>;
     deleteSolarProject(id: bigint): Promise<void>;
+    generateOTP(email: string): Promise<string>;
     getAllCustomers(): Promise<Array<Customer>>;
     getAllDeals(): Promise<Array<Deal>>;
     getAllLeads(): Promise<Array<Lead>>;
@@ -223,7 +240,13 @@ export interface backendInterface {
     markReminderOverdue(id: bigint): Promise<void>;
     moveDealStage(id: bigint, stage: DealStage): Promise<Deal>;
     requestApproval(): Promise<void>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    saveCallerUserProfile(name: string, email: string, phone: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "error";
+        error: string;
+    }>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     updateCustomer(id: bigint, name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
     updateDeal(id: bigint, title: string, value: number, customerId: bigint, stage: DealStage): Promise<Deal>;
@@ -231,8 +254,9 @@ export interface backendInterface {
     updateProjectStatus(projectId: bigint, newStatus: ProjectStatus): Promise<SolarProject>;
     updateReminder(id: bigint, dueDate: Time, note: string): Promise<Reminder>;
     updateSolarProject(id: bigint, systemSizeKW: number, installationStatus: ProjectStatus, notes: string, surveyorName: string, date: Time): Promise<SolarProject>;
+    verifyOTP(email: string, otp: string): Promise<OTPVerificationResult>;
 }
-import type { ApprovalStatus as _ApprovalStatus, Customer as _Customer, Deal as _Deal, DealStage as _DealStage, Lead as _Lead, LeadStatus as _LeadStatus, ProjectStatus as _ProjectStatus, SiteSurvey as _SiteSurvey, SolarProject as _SolarProject, UserApprovalInfo as _UserApprovalInfo, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { ApprovalStatus as _ApprovalStatus, CreateUserStatus as _CreateUserStatus, Customer as _Customer, Deal as _Deal, DealStage as _DealStage, Lead as _Lead, LeadStatus as _LeadStatus, OTPVerificationResult as _OTPVerificationResult, ProjectStatus as _ProjectStatus, SiteSurvey as _SiteSurvey, SolarProject as _SolarProject, UserApprovalInfo as _UserApprovalInfo, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -449,6 +473,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteSolarProject(arg0);
+            return result;
+        }
+    }
+    async generateOTP(arg0: string): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.generateOTP(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.generateOTP(arg0);
             return result;
         }
     }
@@ -817,31 +855,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+    async saveCallerUserProfile(arg0: string, arg1: string, arg2: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "error";
+        error: string;
+    }> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(arg0);
-                return result;
+                const result = await this.actor.saveCallerUserProfile(arg0, arg1, arg2);
+                return from_candid_variant_n36(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(arg0);
-            return result;
+            const result = await this.actor.saveCallerUserProfile(arg0, arg1, arg2);
+            return from_candid_variant_n36(this._uploadFile, this._downloadFile, result);
         }
     }
     async setApproval(arg0: Principal, arg1: ApprovalStatus): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n36(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n37(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n36(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n37(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -929,9 +973,26 @@ export class Backend implements backendInterface {
             return from_candid_SolarProject_n15(this._uploadFile, this._downloadFile, result);
         }
     }
+    async verifyOTP(arg0: string, arg1: string): Promise<OTPVerificationResult> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.verifyOTP(arg0, arg1);
+                return from_candid_OTPVerificationResult_n39(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.verifyOTP(arg0, arg1);
+            return from_candid_OTPVerificationResult_n39(this._uploadFile, this._downloadFile, result);
+        }
+    }
 }
 function from_candid_ApprovalStatus_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ApprovalStatus): ApprovalStatus {
     return from_candid_variant_n35(_uploadFile, _downloadFile, value);
+}
+function from_candid_CreateUserStatus_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CreateUserStatus): CreateUserStatus {
+    return from_candid_variant_n42(_uploadFile, _downloadFile, value);
 }
 function from_candid_DealStage_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _DealStage): DealStage {
     return from_candid_variant_n6(_uploadFile, _downloadFile, value);
@@ -944,6 +1005,9 @@ function from_candid_LeadStatus_n11(_uploadFile: (file: ExternalBlob) => Promise
 }
 function from_candid_Lead_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Lead): Lead {
     return from_candid_record_n10(_uploadFile, _downloadFile, value);
+}
+function from_candid_OTPVerificationResult_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _OTPVerificationResult): OTPVerificationResult {
+    return from_candid_variant_n40(_uploadFile, _downloadFile, value);
 }
 function from_candid_ProjectStatus_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProjectStatus): ProjectStatus {
     return from_candid_variant_n18(_uploadFile, _downloadFile, value);
@@ -1092,6 +1156,61 @@ function from_candid_variant_n35(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): ApprovalStatus {
     return "pending" in value ? ApprovalStatus.pending : "approved" in value ? ApprovalStatus.approved : "rejected" in value ? ApprovalStatus.rejected : value;
 }
+function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: null;
+} | {
+    error: string;
+}): {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "error";
+    error: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "error" in value ? {
+        __kind__: "error",
+        error: value.error
+    } : value;
+}
+function from_candid_variant_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    expired: null;
+} | {
+    invalid: null;
+} | {
+    success: _CreateUserStatus;
+}): {
+    __kind__: "expired";
+    expired: null;
+} | {
+    __kind__: "invalid";
+    invalid: null;
+} | {
+    __kind__: "success";
+    success: CreateUserStatus;
+} {
+    return "expired" in value ? {
+        __kind__: "expired",
+        expired: value.expired
+    } : "invalid" in value ? {
+        __kind__: "invalid",
+        invalid: value.invalid
+    } : "success" in value ? {
+        __kind__: "success",
+        success: from_candid_CreateUserStatus_n41(_uploadFile, _downloadFile, value.success)
+    } : value;
+}
+function from_candid_variant_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    created: null;
+} | {
+    createdFirstAdmin: null;
+} | {
+    alreadyExists: null;
+}): CreateUserStatus {
+    return "created" in value ? CreateUserStatus.created : "createdFirstAdmin" in value ? CreateUserStatus.createdFirstAdmin : "alreadyExists" in value ? CreateUserStatus.alreadyExists : value;
+}
 function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     new: null;
 } | {
@@ -1115,8 +1234,8 @@ function from_candid_vec_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_vec_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_UserApprovalInfo>): Array<UserApprovalInfo> {
     return value.map((x)=>from_candid_UserApprovalInfo_n32(_uploadFile, _downloadFile, x));
 }
-function to_candid_ApprovalStatus_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): _ApprovalStatus {
-    return to_candid_variant_n37(_uploadFile, _downloadFile, value);
+function to_candid_ApprovalStatus_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): _ApprovalStatus {
+    return to_candid_variant_n38(_uploadFile, _downloadFile, value);
 }
 function to_candid_DealStage_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DealStage): _DealStage {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
@@ -1183,7 +1302,7 @@ function to_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint
         guest: null
     } : value;
 }
-function to_candid_variant_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): {
+function to_candid_variant_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): {
     pending: null;
 } | {
     approved: null;

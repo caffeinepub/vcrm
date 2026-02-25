@@ -14,6 +14,7 @@ import SolarProjectsPage from './pages/SolarProjectsPage';
 import SolarProjectDetailPage from './pages/SolarProjectDetailPage';
 import AdminPage from './pages/AdminPage';
 import AccessDeniedPage from './pages/AccessDeniedPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Root route
 const rootRoute = createRootRoute({
@@ -97,6 +98,12 @@ const adminRoute = createRoute({
   component: AdminPage,
 });
 
+const profileRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/profile',
+  component: ProfilePage,
+});
+
 const accessDeniedRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/access-denied',
@@ -117,6 +124,7 @@ const routeTree = rootRoute.addChildren([
     solarProjectsRoute,
     solarProjectDetailRoute,
     adminRoute,
+    profileRoute,
   ]),
 ]);
 

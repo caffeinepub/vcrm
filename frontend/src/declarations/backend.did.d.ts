@@ -13,6 +13,9 @@ import type { Principal } from '@icp-sdk/core/principal';
 export type ApprovalStatus = { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
+export type CreateUserStatus = { 'created' : null } |
+  { 'createdFirstAdmin' : null } |
+  { 'alreadyExists' : null };
 export interface Customer {
   'id' : bigint,
   'latitude' : number,
@@ -47,6 +50,9 @@ export type LeadStatus = { 'new' : null } |
   { 'contacted' : null } |
   { 'converted' : null } |
   { 'qualified' : null };
+export type OTPVerificationResult = { 'expired' : null } |
+  { 'invalid' : null } |
+  { 'success' : CreateUserStatus };
 export type ProjectStatus = { 'pending' : null } |
   { 'completed' : null } |
   { 'inProgress' : null } |
@@ -74,7 +80,11 @@ export interface UserApprovalInfo {
   'status' : ApprovalStatus,
   'principal' : Principal,
 }
-export interface UserProfile { 'name' : string, 'email' : string }
+export interface UserProfile {
+  'name' : string,
+  'email' : string,
+  'phone' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -110,6 +120,7 @@ export interface _SERVICE {
   'deleteLead' : ActorMethod<[bigint], undefined>,
   'deleteReminder' : ActorMethod<[bigint], undefined>,
   'deleteSolarProject' : ActorMethod<[bigint], undefined>,
+  'generateOTP' : ActorMethod<[string], string>,
   'getAllCustomers' : ActorMethod<[], Array<Customer>>,
   'getAllDeals' : ActorMethod<[], Array<Deal>>,
   'getAllLeads' : ActorMethod<[], Array<Lead>>,
@@ -143,7 +154,11 @@ export interface _SERVICE {
   'markReminderOverdue' : ActorMethod<[bigint], undefined>,
   'moveDealStage' : ActorMethod<[bigint, DealStage], Deal>,
   'requestApproval' : ActorMethod<[], undefined>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'saveCallerUserProfile' : ActorMethod<
+    [string, string, string],
+    { 'ok' : null } |
+      { 'error' : string }
+  >,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
   'updateCustomer' : ActorMethod<
     [bigint, string, string, string, string, number, number],
@@ -160,6 +175,7 @@ export interface _SERVICE {
     [bigint, number, ProjectStatus, string, string, Time],
     SolarProject
   >,
+  'verifyOTP' : ActorMethod<[string, string], OTPVerificationResult>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

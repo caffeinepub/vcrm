@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 33,
   "summary": "Building VCRM — a web-based CRM application using React + TypeScript with Motoko canister backend on the Internet Computer. Features include login/signup via Internet Identity, dashboard with leads/deals/revenue, lead and customer management, follow-up reminders, deal pipeline, search/filter, admin panel, dark/light mode, blue professional theme, and solar project management features (site survey, system size in kW, installation status, customer location map).",
   "architectural_notes": [
     "Frontend: React + TypeScript, Tailwind CSS, mobile-responsive",
@@ -10,9 +10,10 @@
   ],
   "known_issues": [
     "Session expiry error shown to users: 'Your session may have expired. Please log out and log in again.'",
-    "Authentication failed error: 'Authentication failed. Please log out and log in again.' shown unexpectedly to users with valid sessions."
+    "Authentication failed error: 'Authentication failed. Please log out and log in again.' shown unexpectedly to users with valid sessions.",
+    "Profile Setup modal shows 'Unable to save profile. Please try again.' error when user submits name and email after Internet Identity login."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-implement-internet-identity-based-login-and-signup-so-users-can-authenticate-securely-before-accessing-the-app",
@@ -181,6 +182,118 @@
         "REQ-25"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-fix-the-usesavecalleruserprofile-mutation-so-that-it-reliably-obtains-a-fresh-non-null-actor-reference-at-the-moment-of-invocation-do-not-rely-on-a-closure-captured-actor-value-that-may-be-stale-before-calling-savecalleruserprofile-on-the-backend-assert-that-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-at-call-time-throw-a-clearly-labeled-error-e-g-actor-not-ready-distinct-from-any-session-expiry-error-so-the-ui-layer-can-differentiate-the-two-failure-modes",
+      "title": "In frontend/src/hooks/useQueries.ts, fix the useSaveCallerUserProfile mutation so that it reliably obtains a fresh, non-null actor reference at the moment of invocation. Do not rely on a closure-captured actor value that may be stale. Before calling saveCallerUserProfile on the backend, assert that the actor is non-null and the identity is authenticated. If the actor is unavailable at call time, throw a clearly labeled error (e.g., 'actor_not_ready') distinct from any session-expiry error, so the UI layer can differentiate the two failure modes.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-rewrite-the-usesavecalleruserprofile-mutation-so-it-obtains-a-completely-fresh-actor-reference-at-the-exact-moment-of-invocation-using-the-actor-factory-or-context-accessor-never-a-closure-captured-value-before-calling-savecalleruserprofile-assert-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-throw-a-clearly-labeled-error-code-actor-not-ready-distinct-from-session-expired-and-retry-actor-acquisition-up-to-3-times-with-a-short-delay-before-giving-up",
+      "title": "In frontend/src/hooks/useQueries.ts, rewrite the useSaveCallerUserProfile mutation so it obtains a completely fresh actor reference at the exact moment of invocation using the actor factory or context accessor — never a closure-captured value. Before calling saveCallerUserProfile, assert the actor is non-null and the identity is authenticated. If the actor is unavailable, throw a clearly labeled error code 'actor_not_ready' (distinct from 'session_expired') and retry actor acquisition up to 3 times with a short delay before giving up.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-profilesetupmodal-tsx-fix-the-form-submission-handler-so-that-the-unable-to-save-profile-please-try-again-error-no-longer-appears-for-users-with-a-valid-internet-identity-session-on-submission-if-the-actor-is-not-yet-ready-silently-poll-or-wait-up-to-5-seconds-for-it-to-become-available-before-invoking-savecalleruserprofile-on-success-close-the-modal-and-navigate-the-user-to-the-dashboard-if-the-call-fails-after-all-retries-display-only-the-generic-message-unable-to-save-profile-please-try-again-never-display-any-text-referencing-authentication-failure-session-expiry-or-log-out-and-try-again-unless-the-identity-is-genuinely-expired",
+      "title": "In frontend/src/components/ProfileSetupModal.tsx, fix the form submission handler so that the 'Unable to save profile. Please try again.' error no longer appears for users with a valid Internet Identity session. On submission, if the actor is not yet ready, silently poll or wait up to 5 seconds for it to become available before invoking saveCallerUserProfile. On success, close the modal and navigate the user to the dashboard. If the call fails after all retries, display only the generic message 'Unable to save profile. Please try again.' — never display any text referencing authentication failure, session expiry, or 'log out and try again' unless the identity is genuinely expired.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-rewrite-the-usesavecalleruserprofile-mutation-to-obtain-a-completely-fresh-non-null-actor-reference-at-the-exact-moment-of-invocation-never-a-closure-captured-value-before-calling-savecalleruserprofile-assert-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-retry-acquisition-up-to-3-times-with-a-short-delay-if-still-unavailable-throw-a-clearly-labeled-error-code-actor-not-ready-distinct-from-session-expired-so-the-ui-layer-can-differentiate-the-two-failure-modes",
+      "title": "In frontend/src/hooks/useQueries.ts, rewrite the useSaveCallerUserProfile mutation to obtain a completely fresh, non-null actor reference at the exact moment of invocation — never a closure-captured value. Before calling saveCallerUserProfile, assert the actor is non-null and the identity is authenticated. If the actor is unavailable, retry acquisition up to 3 times with a short delay. If still unavailable, throw a clearly labeled error code 'actor_not_ready' (distinct from 'session_expired') so the UI layer can differentiate the two failure modes.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-profilesetupmodal-tsx-fix-the-form-submission-handler-so-the-unable-to-save-profile-please-try-again-error-no-longer-appears-for-users-with-a-valid-internet-identity-session-on-submission-if-the-actor-is-not-yet-ready-silently-poll-or-wait-up-to-5-seconds-for-the-actor-to-become-available-before-invoking-savecalleruserprofile-on-success-close-the-modal-and-navigate-the-user-to-the-dashboard-if-the-call-fails-after-all-retries-display-only-the-generic-message-unable-to-save-profile-please-try-again-never-display-any-text-referencing-authentication-failure-session-expiry-or-log-out-and-try-again-unless-the-identity-is-genuinely-expired",
+      "title": "In frontend/src/components/ProfileSetupModal.tsx, fix the form submission handler so the 'Unable to save profile. Please try again.' error no longer appears for users with a valid Internet Identity session. On submission, if the actor is not yet ready, silently poll or wait up to 5 seconds for the actor to become available before invoking saveCallerUserProfile. On success, close the modal and navigate the user to the dashboard. If the call fails after all retries, display only the generic message 'Unable to save profile. Please try again.' — never display any text referencing authentication failure, session expiry, or 'log out and try again' unless the identity is genuinely expired.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-completely-rewrite-the-usesavecalleruserprofile-mutation-so-it-1-obtains-a-completely-fresh-actor-reference-at-the-exact-moment-of-invocation-by-reading-from-the-actor-context-or-factory-never-a-stale-closure-captured-value-2-before-calling-savecalleruserprofile-asserts-the-actor-is-non-null-and-the-identity-is-authenticated-3-if-the-actor-is-unavailable-retries-actor-acquisition-up-to-3-times-with-a-1-second-delay-between-attempts-4-if-still-unavailable-after-retries-throws-a-clearly-labeled-error-with-code-actor-not-ready-distinct-from-any-session-expiry-error-5-on-success-returns-the-result-so-the-ui-can-proceed",
+      "title": "In frontend/src/hooks/useQueries.ts, completely rewrite the useSaveCallerUserProfile mutation so it: (1) obtains a completely fresh actor reference at the exact moment of invocation by reading from the actor context or factory — never a stale closure-captured value; (2) before calling saveCallerUserProfile, asserts the actor is non-null and the identity is authenticated; (3) if the actor is unavailable, retries actor acquisition up to 3 times with a 1-second delay between attempts; (4) if still unavailable after retries, throws a clearly labeled error with code 'actor_not_ready' (distinct from any session-expiry error); (5) on success, returns the result so the UI can proceed.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-profilesetupmodal-tsx-fix-the-form-submission-handler-so-that-the-unable-to-save-profile-please-try-again-error-no-longer-appears-for-users-with-a-valid-internet-identity-session-on-form-submission-1-if-the-actor-is-not-yet-ready-silently-poll-for-the-actor-to-become-available-for-up-to-5-seconds-before-invoking-savecalleruserprofile-2-on-success-close-the-modal-and-navigate-the-user-to-the-dashboard-3-if-the-call-fails-after-all-retries-display-only-the-generic-message-unable-to-save-profile-please-try-again-with-a-retry-button-never-display-any-text-referencing-authentication-failure-session-expiry-or-log-out-and-try-again-unless-the-identity-is-genuinely-expired-i-e-useinternetidentity-reports-no-active-identity",
+      "title": "In frontend/src/components/ProfileSetupModal.tsx, fix the form submission handler so that the 'Unable to save profile. Please try again.' error no longer appears for users with a valid Internet Identity session. On form submission: (1) if the actor is not yet ready, silently poll for the actor to become available for up to 5 seconds before invoking saveCallerUserProfile; (2) on success, close the modal and navigate the user to the dashboard; (3) if the call fails after all retries, display only the generic message 'Unable to save profile. Please try again.' with a retry button — never display any text referencing authentication failure, session expiry, or 'log out and try again' unless the identity is genuinely expired (i.e., useInternetIdentity reports no active identity).",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-rewrite-the-usesavecalleruserprofile-mutation-so-it-obtains-a-completely-fresh-non-null-actor-reference-at-the-exact-moment-of-invocation-never-a-stale-closure-captured-value-before-calling-savecalleruserprofile-assert-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-retry-actor-acquisition-up-to-3-times-with-a-1-second-delay-between-attempts-if-still-unavailable-after-all-retries-throw-a-clearly-labeled-error-with-code-actor-not-ready-distinct-from-session-expired-on-success-return-the-result-so-the-ui-can-proceed",
+      "title": "In frontend/src/hooks/useQueries.ts, rewrite the useSaveCallerUserProfile mutation so it obtains a completely fresh, non-null actor reference at the exact moment of invocation — never a stale closure-captured value. Before calling saveCallerUserProfile, assert the actor is non-null and the identity is authenticated. If the actor is unavailable, retry actor acquisition up to 3 times with a 1-second delay between attempts. If still unavailable after all retries, throw a clearly labeled error with code 'actor_not_ready' (distinct from 'session_expired'). On success, return the result so the UI can proceed.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-profilesetupmodal-tsx-fix-the-form-submission-handler-so-that-no-error-message-appears-for-users-with-a-valid-internet-identity-session-on-submission-if-the-actor-is-not-yet-ready-silently-poll-for-the-actor-to-become-available-for-up-to-5-seconds-before-invoking-savecalleruserprofile-on-success-close-the-modal-and-navigate-the-user-to-the-dashboard-if-the-call-fails-after-all-retries-display-only-the-generic-message-unable-to-save-profile-please-try-again-with-a-retry-button-never-display-any-text-referencing-authentication-failure-session-expiry-or-log-out-and-try-again-unless-useinternetidentity-explicitly-reports-no-active-identity",
+      "title": "In frontend/src/components/ProfileSetupModal.tsx, fix the form submission handler so that no error message appears for users with a valid Internet Identity session. On submission, if the actor is not yet ready, silently poll for the actor to become available for up to 5 seconds before invoking saveCallerUserProfile. On success, close the modal and navigate the user to the dashboard. If the call fails after all retries, display only the generic message 'Unable to save profile. Please try again.' with a retry button. Never display any text referencing authentication failure, session expiry, or 'log out and try again' unless useInternetIdentity explicitly reports no active identity.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-perform-a-definitive-rewrite-of-the-usesavecalleruserprofile-mutation-so-that-it-1-obtains-a-completely-fresh-actor-reference-at-the-exact-moment-of-invocation-by-reading-from-the-actor-context-never-a-stale-closure-captured-value-2-if-the-actor-is-unavailable-retries-actor-acquisition-up-to-5-times-with-a-1-second-delay-between-attempts-3-after-all-retries-if-the-actor-is-still-unavailable-throws-an-error-clearly-labeled-actor-not-ready-never-session-expired-so-the-ui-can-differentiate-4-calls-savecalleruserprofile-with-the-correct-parameter-shape-matching-the-updated-backend-signature-5-on-success-returns-the-result-so-the-ui-can-proceed-add-verbose-console-logging-at-each-step-actor-acquired-call-attempted-result-received-to-aid-diagnosis",
+      "title": "In frontend/src/hooks/useQueries.ts, perform a definitive rewrite of the useSaveCallerUserProfile mutation so that it: (1) obtains a completely fresh actor reference at the exact moment of invocation by reading from the actor context — never a stale closure-captured value; (2) if the actor is unavailable, retries actor acquisition up to 5 times with a 1-second delay between attempts; (3) after all retries, if the actor is still unavailable, throws an error clearly labeled 'actor_not_ready' (never 'session_expired') so the UI can differentiate; (4) calls saveCallerUserProfile with the correct parameter shape matching the updated backend signature; (5) on success, returns the result so the UI can proceed. Add verbose console logging at each step (actor acquired, call attempted, result received) to aid diagnosis.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-components-profilesetupmodal-tsx-definitively-fix-the-form-submission-handler-so-that-the-unable-to-save-profile-please-try-again-error-no-longer-appears-for-users-with-a-valid-internet-identity-session-on-form-submission-1-disable-the-submit-button-and-show-a-loading-spinner-while-the-save-is-in-progress-2-if-the-actor-is-not-yet-ready-silently-poll-for-up-to-8-seconds-before-invoking-savecalleruserprofile-3-on-success-close-the-modal-and-navigate-the-user-to-the-dashboard-4-if-the-call-fails-after-all-retries-display-only-the-generic-message-unable-to-save-profile-please-try-again-with-a-try-again-retry-button-never-display-any-text-referencing-authentication-failure-session-expiry-or-log-out-and-try-again-unless-useinternetidentity-explicitly-reports-no-active-identity-ensure-all-error-cases-are-caught-and-the-user-is-never-left-in-a-broken-state",
+      "title": "In frontend/src/components/ProfileSetupModal.tsx, definitively fix the form submission handler so that the 'Unable to save profile. Please try again.' error no longer appears for users with a valid Internet Identity session. On form submission: (1) disable the submit button and show a loading spinner while the save is in progress; (2) if the actor is not yet ready, silently poll for up to 8 seconds before invoking saveCallerUserProfile; (3) on success, close the modal and navigate the user to the dashboard; (4) if the call fails after all retries, display only the generic message 'Unable to save profile. Please try again.' with a 'Try again' retry button — never display any text referencing authentication failure, session expiry, or 'log out and try again' unless useInternetIdentity explicitly reports no active identity. Ensure all error cases are caught and the user is never left in a broken state.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-existing-internet-identity-login-page-frontend-src-pages-loginpage-tsx-with-a-professional-otp-based-login-ui-the-page-must-have-two-steps-step-1-an-email-input-field-with-a-send-otp-button-step-2-a-6-digit-otp-input-individual-digit-boxes-or-a-single-input-with-a-verify-otp-countdown-timer-10-minutes-a-resend-otp-link-and-a-verify-button-display-the-generated-otp-inline-simulated-delivery-in-a-highlighted-info-banner-since-real-email-delivery-is-not-available-on-successful-verification-store-the-session-email-verified-status-and-redirect-to-the-dashboard-or-profile-setup-if-the-profile-is-incomplete-apply-the-existing-emerald-green-and-dark-teal-brand-theme-consistently",
+      "title": "Replace the existing Internet Identity login page (frontend/src/pages/LoginPage.tsx) with a professional OTP-based login UI. The page must have two steps: Step 1 — an email input field with a 'Send OTP' button; Step 2 — a 6-digit OTP input (individual digit boxes or a single input) with a 'Verify OTP' countdown timer (10 minutes), a 'Resend OTP' link, and a 'Verify' button. Display the generated OTP inline (simulated delivery) in a highlighted info banner since real email delivery is not available. On successful verification, store the session (email + verified status) and redirect to the dashboard or Profile Setup if the profile is incomplete. Apply the existing emerald green and dark teal brand theme consistently.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-professional-profile-page-at-frontend-src-pages-profilepage-tsx-the-page-must-display-the-logged-in-user-s-profile-information-full-name-email-phone-role-account-status-and-member-since-date-in-a-clean-card-based-layout-include-an-inline-edit-form-or-edit-modal-allowing-the-user-to-update-their-name-email-and-phone-number-show-a-non-editable-section-for-role-and-account-status-add-a-change-password-re-verify-section-with-a-button-that-triggers-a-new-otp-to-the-registered-email-for-re-authentication-apply-the-emerald-green-dark-teal-brand-theme-add-a-route-profile-in-app-tsx-and-a-profile-link-in-the-sidebar-navigation-in-layout-tsx",
+      "title": "Create a new professional Profile page at frontend/src/pages/ProfilePage.tsx. The page must display the logged-in user's profile information (full name, email, phone, role, account status, and member since date) in a clean card-based layout. Include an inline edit form (or edit modal) allowing the user to update their name, email, and phone number. Show a non-editable section for role and account status. Add a 'Change Password / Re-verify' section with a button that triggers a new OTP to the registered email for re-authentication. Apply the emerald green / dark teal brand theme. Add a route '/profile' in App.tsx and a 'Profile' link in the sidebar navigation in Layout.tsx.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-hooks-usequeries-ts-add-react-query-hooks-for-the-new-otp-and-profile-endpoints-usegenerateotp-email-useverifyotp-email-otp-usegetcalleruserprofile-and-useupdatecalleruserprofile-ensure-these-hooks-use-a-freshly-obtained-actor-reference-at-call-time-not-a-stale-closure-handle-loading-success-and-error-states-and-invalidate-relevant-queries-on-mutation-success",
+      "title": "In frontend/src/hooks/useQueries.ts, add React Query hooks for the new OTP and profile endpoints: useGenerateOTP(email), useVerifyOTP(email, otp), useGetCallerUserProfile, and useUpdateCallerUserProfile. Ensure these hooks use a freshly obtained actor reference at call time (not a stale closure). Handle loading, success, and error states and invalidate relevant queries on mutation success.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -292,6 +405,92 @@
       "id": "AR-19",
       "summary": "Fix 'Authentication failed. Please log out and log in again.' error and 'Log out and try again' message showing unexpectedly — handle authentication failures gracefully without surfacing this error to users with valid sessions.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Fix the 'Unable to save profile. Please try again.' error shown in the Profile Setup modal ('Welcome to VCRM!') when a user submits their name and email. The saveCallerUserProfile backend call must succeed for authenticated users. The root cause must be identified and resolved — whether it is a stale actor reference, a mismatch between the Motoko backend function signature and the frontend mutation in useQueries.ts, or an authentication timing issue. On success, the modal must close and the user must proceed to the dashboard without any error banner.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "In frontend/src/components/ProfileSetupModal.tsx, fix the form submission handler so that the 'Unable to save profile. Please try again.' error no longer appears for users with a valid Internet Identity session. On submission, if the actor is not yet ready, silently poll or wait (up to a reasonable timeout, e.g., 5 seconds) for the actor to become available before invoking saveCallerUserProfile. If the call succeeds, close the modal and navigate the user to the dashboard. If the call fails after retry, display a generic user-friendly message (e.g., 'Unable to save profile. Please try again.') without any mention of authentication failure or session expiry unless the identity is genuinely expired.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "In the Motoko backend (backend/main.mo), verify that the saveCallerUserProfile function signature, parameter types, and return type exactly match what the frontend mutation in useQueries.ts expects. Ensure that the function correctly accepts name and email string parameters from the caller, persists the profile, and returns a result or confirmation that the frontend can reliably decode. Fix any type mismatches, optional wrapping issues, or variant mismatches that would cause the frontend Candid decode to fail silently or throw.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "In backend/main.mo, audit and fix the saveCallerUserProfile function to ensure its parameter types (name: Text, email: Text), return type, and Candid encoding exactly match what the frontend expects. Ensure the function correctly persists the profile for the authenticated caller and returns a result the frontend Candid decoder can reliably handle without silent failures or variant mismatches.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "In backend/main.mo, audit and fix the saveCallerUserProfile function so its parameter types (name: Text, email: Text), return type, and Candid encoding exactly match what the frontend mutation in useQueries.ts expects. Ensure the function correctly persists the profile for the authenticated caller and returns a result the frontend Candid decoder can reliably handle without silent failures, optional-wrapping mismatches, or variant mismatches.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "In backend/main.mo, audit and fix the saveCallerUserProfile function to ensure its parameter types (name: Text, email: Text), return type, and Candid encoding are correct and unambiguous. The function must persist the profile for the authenticated caller and return a simple, decodable result (e.g., a plain variant or unit type) that the frontend Candid decoder can handle without silent failures, optional-wrapping mismatches, or variant decode errors. Remove any overloads or conflicting type definitions that could cause a mismatch.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "In backend/main.mo, audit and fix the saveCallerUserProfile function to ensure its parameter types (name: Text, email: Text), return type, and Candid encoding exactly match what the frontend mutation in useQueries.ts expects. The function must correctly persist the profile for the authenticated caller and return a simple, unambiguous, decodable result (e.g., a plain variant or unit type) that the frontend Candid decoder can handle without silent failures, optional-wrapping mismatches, or variant decode errors. Remove any conflicting type definitions or overloads.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "In backend/main.mo, perform a definitive audit and fix of the saveCallerUserProfile function. Ensure its parameter types (name: Text, email: Text), return type, and Candid encoding are completely correct and match exactly what the frontend expects. The function must: (1) accept name and email as plain Text parameters from the authenticated caller, (2) correctly persist the profile and assign the first-user auto-admin role if applicable, (3) return a simple, unambiguous result type (e.g., a plain variant #ok or #err Text, or unit) that the frontend Candid decoder can handle without silent failures, optional-wrapping mismatches, or variant decode errors. Remove any conflicting type definitions, overloads, or duplicate function signatures that could cause a Candid mismatch.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Replace Internet Identity login with OTP-based login system (email/phone OTP authentication) and build a professional Profile page for users to view and edit their profile information.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "In the Motoko backend (backend/main.mo), implement an OTP (One-Time Password) authentication system. Add functions to: (1) generateOTP(email: Text) — generate a 6-digit numeric OTP, store it against the email with a 10-minute expiry timestamp, and return the OTP (the frontend will display/simulate delivery since email sending is not supported); (2) verifyOTP(email: Text, otp: Text) — validate the OTP against the stored value and expiry, return a result indicating success or failure with a reason; (3) on successful OTP verification, look up or create a user profile keyed by the verified email, applying the existing first-user auto-admin logic. Remove or retain Internet Identity as a secondary option but OTP must be the primary login path.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "In the Motoko backend (backend/main.mo), add or update user profile management functions to support a richer profile: (1) getCallerUserProfile — return the authenticated caller's profile including name, email, phone (optional), role, approvalStatus, and joinDate; (2) updateCallerUserProfile(name: Text, email: Text, phone: Text) — update the caller's profile fields and return a result. Ensure these functions are compatible with the OTP-based session (keyed by email principal or stored identity).",
+      "reqIds": [
+        "REQ-47"
+      ],
       "status": "pending"
     }
   ],

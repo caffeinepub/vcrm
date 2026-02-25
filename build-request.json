@@ -1,59 +1,129 @@
 {
   "kind": "build_request",
-  "title": "Fix 'Authentication failed. Please log out and log in again.' error in Profile Setup Modal",
+  "title": "OTP-Based Login System and Professional User Profile Page",
   "projectName": "VCRM",
-  "priority": "high",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-24",
-      "text": "In ProfileSetupModal.tsx, eliminate the 'Authentication failed. Please log out and log in again.' error banner that appears when the user submits the profile setup form with a valid Internet Identity session. The modal must not show any authentication error to a user who is actively authenticated. On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile. If the call still fails, surface a generic retry message — never the 'Authentication failed' or 'Log out and try again' text — unless the identity is genuinely expired.",
-      "target": "frontend",
+      "id": "REQ-45",
+      "text": "In the Motoko backend (backend/main.mo), implement an OTP (One-Time Password) authentication system. Add functions to: (1) generateOTP(email: Text) — generate a 6-digit numeric OTP, store it against the email with a 10-minute expiry timestamp, and return the OTP (the frontend will display/simulate delivery since email sending is not supported); (2) verifyOTP(email: Text, otp: Text) — validate the OTP against the stored value and expiry, return a result indicating success or failure with a reason; (3) on successful OTP verification, look up or create a user profile keyed by the verified email, applying the existing first-user auto-admin logic. Remove or retain Internet Identity as a secondary option but OTP must be the primary login path.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-7"
         ],
         "quotes": [
-          "Authentication failed. Please log out and log in again.",
-          "Log out and try again fix kare kya kar rahe hai ap"
+          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
         ]
       },
       "acceptanceCriteria": [
-        "A user with a valid Internet Identity session who fills in Full Name and Email and clicks 'Save Profile & Continue' does NOT see the 'Authentication failed. Please log out and log in again.' error.",
-        "The 'Log out and try again' link is never shown to a user with an active, authenticated session.",
-        "If the actor is momentarily unavailable at submission time, the modal retries silently before displaying any error.",
-        "On successful saveCallerUserProfile call, the modal closes and the user is redirected to the dashboard.",
-        "If the call genuinely fails after retry, a neutral error message is shown (e.g., 'Unable to save profile. Please try again.') without referencing session expiry or authentication failure."
+        "generateOTP(email) stores a 6-digit OTP with a 10-minute expiry and returns the OTP value",
+        "verifyOTP(email, otp) returns #ok when the OTP matches and has not expired",
+        "verifyOTP returns #err with a reason string when OTP is wrong or expired",
+        "First user to verify OTP is automatically assigned Admin role and approved status",
+        "Subsequent users go through the existing approval flow after OTP verification",
+        "Expired OTPs are rejected and a new one must be requested"
       ]
     },
     {
-      "id": "REQ-25",
-      "text": "In useQueries.ts, fix the useSaveCallerUserProfile mutation so that it obtains a fresh actor reference at call time rather than relying on a potentially stale closure. Before calling saveCallerUserProfile, confirm the actor is non-null and the identity is authenticated. If the actor is unavailable, throw an error clearly labeled 'actor_not_ready' (not 'session_expired') so ProfileSetupModal.tsx can distinguish and handle it without showing false authentication failure messages.",
+      "id": "REQ-46",
+      "text": "Replace the existing Internet Identity login page (frontend/src/pages/LoginPage.tsx) with a professional OTP-based login UI. The page must have two steps: Step 1 — an email input field with a 'Send OTP' button; Step 2 — a 6-digit OTP input (individual digit boxes or a single input) with a 'Verify OTP' countdown timer (10 minutes), a 'Resend OTP' link, and a 'Verify' button. Display the generated OTP inline (simulated delivery) in a highlighted info banner since real email delivery is not available. On successful verification, store the session (email + verified status) and redirect to the dashboard or Profile Setup if the profile is incomplete. Apply the existing emerald green and dark teal brand theme consistently.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-7"
         ],
         "quotes": [
-          "Authentication failed. Please log out and log in again."
+          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
         ]
       },
       "acceptanceCriteria": [
-        "The mutation always fetches the latest actor instance at invocation time.",
-        "Errors are typed/labeled so the modal can distinguish 'actor not ready' from 'session expired'.",
-        "No 'Authentication failed' error is thrown when the user has a valid active session.",
-        "The mutation succeeds and returns the expected result when the actor is available and the user is authenticated."
+        "Step 1 shows email input and 'Send OTP' button; invalid email format shows inline validation error",
+        "Step 2 shows OTP input, 10-minute countdown timer, 'Resend OTP' link, and 'Verify' button",
+        "Generated OTP is displayed in an info banner on the login page (simulated delivery)",
+        "Resend OTP resets the countdown and generates a new OTP",
+        "Successful OTP verification redirects to dashboard (or profile setup if profile incomplete)",
+        "Wrong or expired OTP shows a clear inline error message",
+        "Page matches the existing emerald green / dark teal brand theme and is fully responsive"
+      ]
+    },
+    {
+      "id": "REQ-47",
+      "text": "In the Motoko backend (backend/main.mo), add or update user profile management functions to support a richer profile: (1) getCallerUserProfile — return the authenticated caller's profile including name, email, phone (optional), role, approvalStatus, and joinDate; (2) updateCallerUserProfile(name: Text, email: Text, phone: Text) — update the caller's profile fields and return a result. Ensure these functions are compatible with the OTP-based session (keyed by email principal or stored identity).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
+        ]
+      },
+      "acceptanceCriteria": [
+        "getCallerUserProfile returns name, email, phone, role, approvalStatus, and joinDate for the authenticated caller",
+        "updateCallerUserProfile accepts name, email, and phone and persists changes, returning #ok on success",
+        "Phone field is optional and stored as Text",
+        "Functions return appropriate #err variants for unauthenticated or missing profile cases"
+      ]
+    },
+    {
+      "id": "REQ-48",
+      "text": "Create a new professional Profile page at frontend/src/pages/ProfilePage.tsx. The page must display the logged-in user's profile information (full name, email, phone, role, account status, and member since date) in a clean card-based layout. Include an inline edit form (or edit modal) allowing the user to update their name, email, and phone number. Show a non-editable section for role and account status. Add a 'Change Password / Re-verify' section with a button that triggers a new OTP to the registered email for re-authentication. Apply the emerald green / dark teal brand theme. Add a route '/profile' in App.tsx and a 'Profile' link in the sidebar navigation in Layout.tsx.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Profile page at /profile displays name, email, phone, role, account status, and member-since date",
+        "User can edit name, email, and phone via an inline form or edit modal; changes are saved to the backend",
+        "Role and account status fields are read-only and clearly labeled",
+        "'Re-verify via OTP' button triggers a new OTP flow for the registered email",
+        "Success and error toasts appear on save",
+        "Route /profile is registered in App.tsx",
+        "Sidebar navigation in Layout.tsx includes a 'Profile' link with an appropriate icon",
+        "Page is fully responsive and matches the emerald green / dark teal brand theme"
+      ]
+    },
+    {
+      "id": "REQ-49",
+      "text": "In frontend/src/hooks/useQueries.ts, add React Query hooks for the new OTP and profile endpoints: useGenerateOTP(email), useVerifyOTP(email, otp), useGetCallerUserProfile, and useUpdateCallerUserProfile. Ensure these hooks use a freshly obtained actor reference at call time (not a stale closure). Handle loading, success, and error states and invalidate relevant queries on mutation success.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-7"
+        ],
+        "quotes": [
+          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
+        ]
+      },
+      "acceptanceCriteria": [
+        "useGenerateOTP mutation calls the backend generateOTP function and returns the OTP result",
+        "useVerifyOTP mutation calls verifyOTP and returns success or error",
+        "useGetCallerUserProfile query fetches the current user's full profile",
+        "useUpdateCallerUserProfile mutation updates the profile and invalidates the profile query on success",
+        "All hooks use a fresh actor reference at invocation time",
+        "Loading and error states are properly exposed for UI consumption"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files listed in frontend.immutablePaths.",
-    "Do not change any backend Motoko logic unless strictly necessary to resolve the authentication error.",
-    "The 'Log out and try again' UI element must never be shown to users with a valid active Internet Identity session."
+    "Do not remove or break existing Internet Identity authentication infrastructure — it may be retained as a secondary option",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "All Motoko logic must remain in backend/main.mo (single-actor architecture)",
+    "OTP expiry must be enforced on the backend, not just the frontend",
+    "No external email/SMS service integrations — OTP is displayed inline (simulated delivery)"
   ],
   "nonGoals": [
-    "Redesigning the Profile Setup Modal layout or visual style.",
-    "Changing the Internet Identity authentication flow itself.",
-    "Adding new CRM features or modifying existing data models."
+    "Real email or SMS delivery of OTP codes",
+    "Third-party authentication providers (OAuth, Auth0, etc.)",
+    "Password-based authentication",
+    "Two-factor authentication beyond OTP",
+    "Changes to the existing dashboard, leads, customers, deals, reminders, solar projects, or admin modules"
   ],
   "imageRequirements": {
     "required": [],

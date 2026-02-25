@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-profilesetupmodal-tsx-eliminate-the-authentication-failed-please-log-out-and-log-in-again-error-banner-that-appears-when-the-user-submits-the-profile-setup-form-with-a-valid-internet-identity-session-the-modal-must-not-show-any-authentication-error-to-a-user-who-is-actively-authenticated-on-form-submission-if-the-actor-is-null-or-unavailable-silently-wait-for-the-actor-to-be-ready-up-to-a-reasonable-timeout-before-invoking-savecalleruserprofile-if-the-call-still-fails-surface-a-generic-retry-message-never-the-authentication-failed-or-log-out-and-try-again-text-unless-the-identity-is-genuinely-expired",
-      "featureTitle": "In ProfileSetupModal.tsx, eliminate the 'Authentication failed. Please log out and log in again.' error banner that appears when the user submits the profile setup form with a valid Internet Identity session. The modal must not show any authentication error to a user who is actively authenticated. On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile. If the call still fails, surface a generic retry message — never the 'Authentication failed' or 'Log out and try again' text — unless the identity is genuinely expired.",
+      "featureId": "feature-replace-the-existing-internet-identity-login-page-frontend-src-pages-loginpage-tsx-with-a-professional-otp-based-login-ui-the-page-must-have-two-steps-step-1-an-email-input-field-with-a-send-otp-button-step-2-a-6-digit-otp-input-individual-digit-boxes-or-a-single-input-with-a-verify-otp-countdown-timer-10-minutes-a-resend-otp-link-and-a-verify-button-display-the-generated-otp-inline-simulated-delivery-in-a-highlighted-info-banner-since-real-email-delivery-is-not-available-on-successful-verification-store-the-session-email-verified-status-and-redirect-to-the-dashboard-or-profile-setup-if-the-profile-is-incomplete-apply-the-existing-emerald-green-and-dark-teal-brand-theme-consistently",
+      "featureTitle": "Replace the existing Internet Identity login page (frontend/src/pages/LoginPage.tsx) with a professional OTP-based login UI. The page must have two steps: Step 1 — an email input field with a 'Send OTP' button; Step 2 — a 6-digit OTP input (individual digit boxes or a single input) with a 'Verify OTP' countdown timer (10 minutes), a 'Resend OTP' link, and a 'Verify' button. Display the generated OTP inline (simulated delivery) in a highlighted info banner since real email delivery is not available. On successful verification, store the session (email + verified status) and redirect to the dashboard or Profile Setup if the profile is incomplete. Apply the existing emerald green and dark teal brand theme consistently.",
       "files": [
-        "frontend/src/components/ProfileSetupModal.tsx"
+        "frontend/src/pages/LoginPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,13 +17,35 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-24"
+        "REQ-46"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-in-usequeries-ts-fix-the-usesavecalleruserprofile-mutation-so-that-it-obtains-a-fresh-actor-reference-at-call-time-rather-than-relying-on-a-potentially-stale-closure-before-calling-savecalleruserprofile-confirm-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-throw-an-error-clearly-labeled-actor-not-ready-not-session-expired-so-profilesetupmodal-tsx-can-distinguish-and-handle-it-without-showing-false-authentication-failure-messages",
-      "featureTitle": "In useQueries.ts, fix the useSaveCallerUserProfile mutation so that it obtains a fresh actor reference at call time rather than relying on a potentially stale closure. Before calling saveCallerUserProfile, confirm the actor is non-null and the identity is authenticated. If the actor is unavailable, throw an error clearly labeled 'actor_not_ready' (not 'session_expired') so ProfileSetupModal.tsx can distinguish and handle it without showing false authentication failure messages.",
+      "featureId": "feature-create-a-new-professional-profile-page-at-frontend-src-pages-profilepage-tsx-the-page-must-display-the-logged-in-user-s-profile-information-full-name-email-phone-role-account-status-and-member-since-date-in-a-clean-card-based-layout-include-an-inline-edit-form-or-edit-modal-allowing-the-user-to-update-their-name-email-and-phone-number-show-a-non-editable-section-for-role-and-account-status-add-a-change-password-re-verify-section-with-a-button-that-triggers-a-new-otp-to-the-registered-email-for-re-authentication-apply-the-emerald-green-dark-teal-brand-theme-add-a-route-profile-in-app-tsx-and-a-profile-link-in-the-sidebar-navigation-in-layout-tsx",
+      "featureTitle": "Create a new professional Profile page at frontend/src/pages/ProfilePage.tsx. The page must display the logged-in user's profile information (full name, email, phone, role, account status, and member since date) in a clean card-based layout. Include an inline edit form (or edit modal) allowing the user to update their name, email, and phone number. Show a non-editable section for role and account status. Add a 'Change Password / Re-verify' section with a button that triggers a new OTP to the registered email for re-authentication. Apply the emerald green / dark teal brand theme. Add a route '/profile' in App.tsx and a 'Profile' link in the sidebar navigation in Layout.tsx.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/Layout.tsx",
+        "frontend/src/pages/ProfilePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-48"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-frontend-src-hooks-usequeries-ts-add-react-query-hooks-for-the-new-otp-and-profile-endpoints-usegenerateotp-email-useverifyotp-email-otp-usegetcalleruserprofile-and-useupdatecalleruserprofile-ensure-these-hooks-use-a-freshly-obtained-actor-reference-at-call-time-not-a-stale-closure-handle-loading-success-and-error-states-and-invalidate-relevant-queries-on-mutation-success",
+      "featureTitle": "In frontend/src/hooks/useQueries.ts, add React Query hooks for the new OTP and profile endpoints: useGenerateOTP(email), useVerifyOTP(email, otp), useGetCallerUserProfile, and useUpdateCallerUserProfile. Ensure these hooks use a freshly obtained actor reference at call time (not a stale closure). Handle loading, success, and error states and invalidate relevant queries on mutation success.",
       "files": [
         "frontend/src/hooks/useQueries.ts"
       ],
@@ -37,7 +59,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-25"
+        "REQ-49"
       ],
       "confidence": "high"
     }

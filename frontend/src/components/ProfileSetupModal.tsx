@@ -1,82 +1,95 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSaveCallerUserProfile } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { User, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { User, AlertCircle, Loader2, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export default function ProfileSetupModal() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const saveProfile = useSaveCallerUserProfile();
   const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
-  // Track how long we've been waiting for the actor
-  const [actorWaitSeconds, setActorWaitSeconds] = useState(0);
+  // Actor is ready when it exists, is not fetching, and identity is authenticated (non-anonymous)
+  const isActorReady =
+    !!actor &&
+    !actorFetching &&
+    !!identity &&
+    !identity.getPrincipal().isAnonymous();
 
-  const actorNotReady = !actor || actorFetching;
+  // Auto-submit ref: if user submitted before actor was ready, fire once it becomes ready
+  const pendingSubmitRef = useRef<{ name: string; email: string; phone: string } | null>(null);
 
   useEffect(() => {
-    if (actorNotReady) {
-      const interval = setInterval(() => {
-        setActorWaitSeconds((s) => s + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setActorWaitSeconds(0);
+    if (isActorReady && pendingSubmitRef.current) {
+      const pending = pendingSubmitRef.current;
+      pendingSubmitRef.current = null;
+      const t = setTimeout(() => {
+        saveProfile.reset();
+        saveProfile.mutateAsync({ name: pending.name, email: pending.email, phone: pending.phone })
+          .then(() => {
+            toast.success('Profile saved! Welcome to VCRM.');
+          })
+          .catch(() => {
+            // Error displayed inline via saveProfile.error
+          });
+      }, 200);
+      return () => clearTimeout(t);
     }
-  }, [actorNotReady]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActorReady]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    // Reset any previous error state
     saveProfile.reset();
 
+    if (!isActorReady) {
+      pendingSubmitRef.current = { name: name.trim(), email: email.trim(), phone: phone.trim() };
+      try {
+        await saveProfile.mutateAsync({ name: name.trim(), email: email.trim(), phone: phone.trim() });
+        toast.success('Profile saved! Welcome to VCRM.');
+      } catch {
+        // Error displayed inline
+      }
+      return;
+    }
+
     try {
-      await saveProfile.mutateAsync({ name: name.trim(), email: email.trim() });
+      await saveProfile.mutateAsync({ name: name.trim(), email: email.trim(), phone: phone.trim() });
       toast.success('Profile saved! Welcome to VCRM.');
     } catch {
-      // Error is displayed inline via saveProfile.error — no toast needed here
+      // Error displayed inline via saveProfile.error
     }
   };
 
   const handleRetry = () => {
     saveProfile.reset();
-    // Invalidate actor to force re-initialization
+    pendingSubmitRef.current = null;
     queryClient.invalidateQueries({ queryKey: ['actor'] });
-    setActorWaitSeconds(0);
+    queryClient.removeQueries({ queryKey: ['currentUserProfile'] });
   };
 
-  // Determine the user-facing error message — never reference auth/session expiry
   const errorMessage = saveProfile.error
     ? (() => {
-        const err = saveProfile.error as Error & { type?: string };
-        const type = err.type ?? '';
-        const msg = err.message ?? String(saveProfile.error);
-
-        if (type === 'actor_not_ready' || msg.includes('still initializing') || msg.includes('connection not ready')) {
-          return {
-            type: 'retry' as const,
-            text: 'Backend connection not ready. Please wait a moment and try again.',
-          };
+        if (!identity || identity.getPrincipal().isAnonymous()) {
+          return 'Please log in to continue.';
         }
-
-        // All other errors — show a generic message, never mention auth/session
-        return {
-          type: 'retry' as const,
-          text: 'Unable to save profile. Please try again.',
-        };
+        return 'Unable to save profile. Please try again.';
       })()
     : null;
 
-  const actorTimedOut = actorNotReady && actorWaitSeconds >= 12;
+  const isSubmitting = saveProfile.isPending;
 
   return (
     <Dialog open>
@@ -93,37 +106,35 @@ export default function ProfileSetupModal() {
           </div>
         </DialogHeader>
 
-        {/* Actor still loading indicator — only show after a brief delay */}
-        {actorNotReady && !actorTimedOut && actorWaitSeconds >= 2 && (
+        {/* Actor readiness indicator */}
+        {!isActorReady && !saveProfile.error && !isSubmitting && (
+          <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border px-3 py-2 text-xs text-muted-foreground">
+            <Loader2 size={13} className="animate-spin shrink-0" />
+            <span>Connecting to backend…</span>
+          </div>
+        )}
+
+        {isActorReady && !saveProfile.error && !isSubmitting && (
+          <div className="flex items-center gap-2 rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary">
+            <CheckCircle2 size={13} className="shrink-0" />
+            <span>Connected — ready to save your profile.</span>
+          </div>
+        )}
+
+        {/* Saving indicator */}
+        {isSubmitting && (
           <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border px-3 py-2.5 text-sm text-muted-foreground">
             <Loader2 size={15} className="animate-spin shrink-0" />
-            <span>Connecting to backend… please wait.</span>
+            <span>Saving your profile…</span>
           </div>
         )}
 
-        {/* Actor timed out */}
-        {actorTimedOut && (
+        {/* Error banner */}
+        {errorMessage && !isSubmitting && (
           <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p>Unable to connect to backend. Please try refreshing.</p>
-              <button
-                type="button"
-                onClick={handleRetry}
-                className="mt-1 flex items-center gap-1 text-xs underline underline-offset-2 hover:no-underline"
-              >
-                <RefreshCw size={11} /> Retry connection
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Mutation error banner — generic message only, no auth/session references */}
-        {errorMessage && (
-          <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive">
-            <AlertCircle size={16} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <span>{errorMessage.text}</span>
+              <span>{errorMessage}</span>
               <button
                 type="button"
                 onClick={handleRetry}
@@ -144,7 +155,7 @@ export default function ProfileSetupModal() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              disabled={saveProfile.isPending}
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -155,21 +166,28 @@ export default function ProfileSetupModal() {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={saveProfile.isPending}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 000-0000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={isSubmitting}
             />
           </div>
           <Button
             type="submit"
             className="w-full"
-            disabled={saveProfile.isPending || !name.trim() || actorNotReady}
+            disabled={isSubmitting || !name.trim()}
           >
-            {saveProfile.isPending ? (
+            {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 size={15} className="animate-spin" /> Saving…
-              </span>
-            ) : actorNotReady ? (
-              <span className="flex items-center gap-2">
-                <Loader2 size={15} className="animate-spin" /> Connecting…
               </span>
             ) : (
               'Save Profile & Continue'
