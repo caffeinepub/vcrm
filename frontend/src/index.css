@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Deep blue primary */
+    --primary: 0.38 0.18 255;
+    --primary-foreground: 1 0 0;
+
+    /* Backgrounds */
+    --background: 0.975 0.005 255;
+    --foreground: 0.15 0.02 255;
+
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.02 255;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.02 255;
+
+    /* Secondary - light blue tint */
+    --secondary: 0.93 0.03 255;
+    --secondary-foreground: 0.25 0.1 255;
+
+    /* Muted */
+    --muted: 0.94 0.01 255;
+    --muted-foreground: 0.5 0.04 255;
+
+    /* Accent - orange */
+    --accent: 0.75 0.18 55;
+    --accent-foreground: 1 0 0;
+
+    /* Destructive */
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.88 0.02 255;
+    --input: 0.88 0.02 255;
+    --ring: 0.38 0.18 255;
+
+    /* Charts */
+    --chart-1: 0.55 0.22 255;
+    --chart-2: 0.65 0.18 200;
+    --chart-3: 0.75 0.18 55;
+    --chart-4: 0.6 0.2 280;
+    --chart-5: 0.7 0.15 160;
+
+    /* Sidebar - deep navy */
+    --sidebar: 0.18 0.08 255;
+    --sidebar-foreground: 0.92 0.03 255;
+    --sidebar-primary: 0.65 0.18 255;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.25 0.1 255;
+    --sidebar-accent-foreground: 0.95 0.02 255;
+    --sidebar-border: 0.28 0.08 255;
+    --sidebar-ring: 0.55 0.18 255;
+
+    /* Custom tokens */
+    --orange: 0.72 0.19 55;
+    --navy: 0.18 0.08 255;
+    --blue-mid: 0.45 0.2 255;
+  }
+
+  .dark {
+    --background: 0.12 0.04 255;
+    --foreground: 0.93 0.02 255;
+
+    --card: 0.17 0.05 255;
+    --card-foreground: 0.93 0.02 255;
+
+    --popover: 0.2 0.06 255;
+    --popover-foreground: 0.93 0.02 255;
+
+    --primary: 0.6 0.2 255;
+    --primary-foreground: 0.1 0.04 255;
+
+    --secondary: 0.22 0.07 255;
+    --secondary-foreground: 0.9 0.02 255;
+
+    --muted: 0.22 0.05 255;
+    --muted-foreground: 0.62 0.05 255;
+
+    --accent: 0.72 0.19 55;
+    --accent-foreground: 0.1 0.02 0;
+
+    --destructive: 0.65 0.22 25;
+    --destructive-foreground: 0.98 0 0;
+
+    --border: 1 0 0 / 10%;
+    --input: 1 0 0 / 12%;
+    --ring: 0.55 0.18 255;
+
+    --chart-1: 0.6 0.22 255;
+    --chart-2: 0.65 0.18 200;
+    --chart-3: 0.75 0.18 55;
+    --chart-4: 0.65 0.2 280;
+    --chart-5: 0.7 0.15 160;
+
+    --sidebar: 0.13 0.05 255;
+    --sidebar-foreground: 0.9 0.03 255;
+    --sidebar-primary: 0.6 0.2 255;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.2 0.07 255;
+    --sidebar-accent-foreground: 0.9 0.02 255;
+    --sidebar-border: 1 0 0 / 10%;
+    --sidebar-ring: 0.55 0.18 255;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(var(--border));
+    border-radius: 2px;
+  }
+}

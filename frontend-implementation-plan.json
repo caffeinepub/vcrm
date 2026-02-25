@@ -1,0 +1,34 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix Access Pending issue and add VCRM logo",
+  "requirements": [
+    {
+      "id": "REQ-13",
+      "summary": "Display the VCRM logo in the sidebar header and on the login page",
+      "acceptanceCriteria": [
+        "The VCRM logo is visible at the top of the sidebar navigation on all authenticated pages.",
+        "The VCRM logo is visible on the login page.",
+        "The logo renders correctly in both light and dark modes.",
+        "The logo image is served from frontend/public/assets/generated/vcrm-logo.png."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/assets/generated/vcrm-logo.dim_512x512.png",
+          "operation": "create",
+          "description": "Save the generated VCRM logo image (blue 3D V-shape with bar chart icon, orange sphere accent, orbital swoosh ring, and silver-gray 'CRM' text on white background) at this workspace path. This image will be referenced by the frontend components."
+        },
+        {
+          "path": "frontend/src/components/Layout.tsx",
+          "operation": "modify",
+          "description": "Add the VCRM logo to the sidebar header at the top of the navigation area. Import and render an <img> element with src pointing to '/assets/generated/vcrm-logo.dim_512x512.png'. Apply appropriate sizing (e.g., h-12 or h-16), alt text 'VCRM Logo', and dark mode compatibility. Position the logo above the existing navigation links in the sidebar."
+        },
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Add the VCRM logo to the login page layout. Import and render an <img> element with src pointing to '/assets/generated/vcrm-logo.dim_512x512.png' in a prominent position on the page (e.g., centered above the sign-in button or in the feature highlights panel). Apply appropriate sizing, alt text 'VCRM Logo', and ensure it is visible in both light and dark modes."
+        }
+      ]
+    }
+  ]
+}

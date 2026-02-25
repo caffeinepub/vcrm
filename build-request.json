@@ -1,0 +1,63 @@
+{
+  "kind": "build_request",
+  "title": "Fix Access Pending issue and add VCRM logo",
+  "projectName": "VCRM",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-12",
+      "text": "Fix the user approval flow so that the very first user who logs in via Internet Identity is automatically granted Admin status and full access, bypassing the 'Access Pending' screen. Subsequent users should still go through approval.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "ap code bana de fir bhi vahi dikh raha hai",
+          "plz"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The first user to authenticate via Internet Identity is automatically set as Admin and approved.",
+        "The first user is redirected directly to the dashboard after login — no 'Access Pending' screen is shown.",
+        "Subsequent new users still see the 'Access Pending' screen until approved by an Admin.",
+        "Existing Admin users retain their role."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Display the uploaded VCRM logo image (blue V with bar chart, orange sphere accent, silver 'CRM' text) in the sidebar header and on the login page. Save the logo as a static asset at frontend/public/assets/generated/vcrm-logo.png and render it in those locations.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "VCRM LOGO AD KARE",
+          "plz"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The VCRM logo is visible at the top of the sidebar navigation on all authenticated pages.",
+        "The VCRM logo is visible on the login page.",
+        "The logo renders correctly in both light and dark modes.",
+        "The logo image is served from frontend/public/assets/generated/vcrm-logo.png."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not remove or bypass the approval system for non-first users.",
+    "Do not modify files under frontend/src/hooks/ or frontend/src/components/ui."
+  ],
+  "nonGoals": [
+    "Removing the admin approval system entirely.",
+    "Allowing all users to bypass approval.",
+    "Redesigning the Access Pending page layout."
+  ],
+  "imageRequirements": {
+    "required": [
+      "VCRM brand logo with a blue 3D V-shape and bar chart icon, orange sphere accent, orbital swoosh ring, and silver-gray 'CRM' text on white background (vcrm-logo.dim_512x512.png)"
+    ],
+    "edits": []
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T15:38:57.570Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 2,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-12",
+        "summary": "Fix the user approval flow so that the very first user who logs in via Internet Identity is automatically granted Admin status and full access, bypassing the 'Access Pending' screen. Subsequent users should still go through approval.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Display the uploaded VCRM logo image (blue V with bar chart, orange sphere accent, silver 'CRM' text) in the sidebar header and on the login page. Save the logo as a static asset at frontend/public/assets/generated/vcrm-logo.png and render it in those locations.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/public/assets/generated/vcrm-logo.dim_512x512.png",
+          "frontend/src/components/Layout.tsx",
+          "frontend/src/pages/LoginPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/public/assets/generated/vcrm-logo.dim_512x512.png",
+          "frontend/src/components/Layout.tsx",
+          "frontend/src/pages/LoginPage.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "build-template/README.md",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/public/assets/generated/vcrm-logo.dim_512x512.png",
+    "frontend/src/components/Layout.tsx",
+    "frontend/src/pages/LoginPage.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

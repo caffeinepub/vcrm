@@ -1,0 +1,16 @@
+{
+  "frontend/src/pages/SolarProjectDetailPage.tsx": "Complete solar project detail page showing system info, site survey details, customer location via StaticMapWidget, and edit/delete functionality.",
+  "frontend/src/pages/AdminPage.tsx": "Admin-only panel displaying system-wide statistics, user approval management, and role assignment controls.",
+  "frontend/src/pages/AccessDeniedPage.tsx": "Simple access denied page shown when unauthorized users attempt to access restricted routes.",
+  "frontend/src/components/StaticMapWidget.tsx": "Visual map widget rendering a grid-based coordinate display with a pin marker for customer lat/lng coordinates, no external APIs used.",
+  "frontend/src/components/DeleteConfirmationDialog.tsx": "Reusable AlertDialog component for confirming delete operations with entity name, confirm/cancel callbacks, and loading state.",
+  "frontend/src/components/LeadFormDialog.tsx": "Dialog form for creating and editing leads with name, contact, status dropdown, and notes fields.",
+  "frontend/src/components/CustomerFormDialog.tsx": "Dialog form for creating and editing customers with name, email, phone, address, latitude, and longitude fields.",
+  "frontend/src/components/DealFormDialog.tsx": "Dialog form for creating and editing deals with title, value, customer dropdown, and stage selection.",
+  "frontend/src/components/DealCard.tsx": "Compact deal card component displaying title, customer name, and value with a dropdown menu for stage moves, edit, and delete actions.",
+  "frontend/src/components/ReminderFormDialog.tsx": "Dialog form for creating and editing reminders with datetime-local input and note textarea, converting between bigint nanoseconds and JS dates.",
+  "frontend/src/components/SolarProjectFormDialog.tsx": "Dialog form for creating and editing solar projects with customer selection, system size (kW), installation status, and site survey section (date, surveyor, notes).",
+  "frontend/src/pages/DashboardPage.tsx": "Dashboard page with stat cards for leads/customers/deals/revenue, a deal pipeline bar chart, solar project status pie chart, and quick stats row — fixes LeadStatus enum comparison.",
+  "frontend/src/components/Layout.tsx": "Main authenticated layout with sidebar navigation, mobile header, and access-pending screen — now displays the VCRM logo image in the sidebar header, mobile header, mobile overlay sidebar, and the access-pending screen instead of the icon-based placeholder.",
+  "frontend/src/pages/LoginPage.tsx": "Login page with left feature panel and right sign-in card — now shows the VCRM logo image prominently in the left panel, the login card, and the mobile header instead of the icon-based placeholder."
+}

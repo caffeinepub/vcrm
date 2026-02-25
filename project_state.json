@@ -1,0 +1,186 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Building VCRM — a web-based CRM application using React + TypeScript with Motoko canister backend on the Internet Computer. Features include login/signup via Internet Identity, dashboard with leads/deals/revenue, lead and customer management, follow-up reminders, deal pipeline, search/filter, admin panel, dark/light mode, blue professional theme, and solar project management features (site survey, system size in kW, installation status, customer location map).",
+  "architectural_notes": [
+    "Frontend: React + TypeScript, Tailwind CSS, mobile-responsive",
+    "Backend: Motoko canister on Internet Computer blockchain",
+    "Auth: Internet Identity (passkeys, Google, Apple, Microsoft)",
+    "Color theme: Blue-based professional, supports dark/light mode"
+  ],
+  "known_issues": [],
+  "isFixRequest": true,
+  "imageRequirements": "## Required Images\n- VCRM brand logo with a blue 3D V-shape and bar chart icon, orange sphere accent, orbital swoosh ring, and silver-gray 'CRM' text on white background (vcrm-logo.dim_512x512.png)",
+  "existing_features": [
+    {
+      "id": "feature-implement-internet-identity-based-login-and-signup-so-users-can-authenticate-securely-before-accessing-the-app",
+      "title": "Implement Internet Identity-based login and signup so users can authenticate securely before accessing the app.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-dashboard-home-screen-displaying-summary-statistics-total-leads-total-deals-and-total-revenue-include-cards-and-charts-for-quick-visual-overview",
+      "title": "Build a dashboard home screen displaying summary statistics: total leads, total deals, and total revenue. Include cards and charts for quick visual overview.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-full-add-edit-and-delete-functionality-for-leads-storing-lead-records-name-contact-status-notes-in-the-motoko-backend",
+      "title": "Implement full Add, Edit, and Delete functionality for Leads, storing lead records (name, contact, status, notes) in the Motoko backend.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-customer-management-module-where-customers-can-be-created-viewed-edited-and-deleted-with-fields-for-name-email-phone-and-address",
+      "title": "Implement a Customer management module where customers can be created, viewed, edited, and deleted, with fields for name, email, phone, and address.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-follow-up-reminders-users-can-set-a-reminder-date-and-note-for-any-lead-or-customer-and-overdue-reminders-are-visually-highlighted-in-the-ui",
+      "title": "Implement follow-up reminders: users can set a reminder date and note for any lead or customer, and overdue reminders are visually highlighted in the UI.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-deal-pipeline-board-with-four-stages-new-in-progress-won-lost-deals-can-be-moved-between-stages-and-each-deal-shows-title-value-and-associated-customer",
+      "title": "Build a deal pipeline board with four stages: New, In Progress, Won, Lost. Deals can be moved between stages and each deal shows title, value, and associated customer.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-global-search-and-filter-functionality-across-leads-customers-and-deals-by-name-status-or-date-range",
+      "title": "Add global search and filter functionality across leads, customers, and deals by name, status, or date range.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-admin-panel-accessible-only-to-designated-admin-users-showing-user-management-list-of-users-ability-to-toggle-admin-role-and-system-wide-statistics",
+      "title": "Implement an Admin panel accessible only to designated admin users, showing user management (list of users, ability to toggle admin role) and system-wide statistics.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-dark-light-mode-toggle-that-persists-the-user-s-preference-and-applies-consistently-across-all-pages",
+      "title": "Implement a Dark/Light mode toggle that persists the user's preference and applies consistently across all pages.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-solar-projects-module-linked-to-customers-each-solar-project-record-must-include-site-survey-details-notes-date-surveyor-name-system-size-in-kw-installation-status-pending-in-progress-completed-on-hold-and-customer-location-displayed-on-an-embedded-static-map-widget-using-latitude-longitude-coordinates",
+      "title": "Add a Solar Projects module linked to customers. Each solar project record must include: site survey details (notes, date, surveyor name), system size in kW, installation status (Pending, In Progress, Completed, On Hold), and customer location displayed on an embedded static map widget using latitude/longitude coordinates.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-professional-blue-based-visual-theme-inspired-by-the-vcrm-logo-deep-blues-white-with-orange-accent-highlights-use-consistent-typography-card-based-layouts-and-a-sidebar-navigation-display-the-vcrm-logo-in-the-sidebar-header-and-login-screen",
+      "title": "Apply a professional blue-based visual theme inspired by the VCRM logo (deep blues, white, with orange accent highlights). Use consistent typography, card-based layouts, and a sidebar navigation. Display the VCRM logo in the sidebar header and login screen.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-the-uploaded-vcrm-logo-image-blue-v-with-bar-chart-orange-sphere-accent-silver-crm-text-in-the-sidebar-header-and-on-the-login-page-save-the-logo-as-a-static-asset-at-frontend-public-assets-generated-vcrm-logo-png-and-render-it-in-those-locations",
+      "title": "Display the uploaded VCRM logo image (blue V with bar chart, orange sphere accent, silver 'CRM' text) in the sidebar header and on the login page. Save the logo as a static asset at frontend/public/assets/generated/vcrm-logo.png and render it in those locations.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Login & Signup system via Internet Identity",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Dashboard with total leads, deals, and revenue stats",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add/Edit/Delete Leads management",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Customer management module",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Follow-up reminders with notifications",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Deal pipeline with stages: New, In Progress, Won, Lost",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Search and filter functionality",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Admin panel",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Dark and Light mode toggle",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Solar project management: site survey, system size (kW), installation status, customer location map",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Fix the user approval flow so that the very first user who logs in via Internet Identity is automatically granted Admin status and full access, bypassing the 'Access Pending' screen. Subsequent users should still go through approval.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "VCRM",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

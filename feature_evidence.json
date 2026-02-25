@@ -1,0 +1,26 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-display-the-uploaded-vcrm-logo-image-blue-v-with-bar-chart-orange-sphere-accent-silver-crm-text-in-the-sidebar-header-and-on-the-login-page-save-the-logo-as-a-static-asset-at-frontend-public-assets-generated-vcrm-logo-png-and-render-it-in-those-locations",
+      "featureTitle": "Display the uploaded VCRM logo image (blue V with bar chart, orange sphere accent, silver 'CRM' text) in the sidebar header and on the login page. Save the logo as a static asset at frontend/public/assets/generated/vcrm-logo.png and render it in those locations.",
+      "files": [
+        "frontend/src/components/Layout.tsx",
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-13"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
