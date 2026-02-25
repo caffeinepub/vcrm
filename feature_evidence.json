@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-display-the-uploaded-vcrm-logo-image-blue-v-with-bar-chart-orange-sphere-accent-silver-crm-text-in-the-sidebar-header-and-on-the-login-page-save-the-logo-as-a-static-asset-at-frontend-public-assets-generated-vcrm-logo-png-and-render-it-in-those-locations",
-      "featureTitle": "Display the uploaded VCRM logo image (blue V with bar chart, orange sphere accent, silver 'CRM' text) in the sidebar header and on the login page. Save the logo as a static asset at frontend/public/assets/generated/vcrm-logo.png and render it in those locations.",
+      "featureId": "feature-in-profilesetupmodal-tsx-eliminate-the-authentication-failed-please-log-out-and-log-in-again-error-banner-that-appears-when-the-user-submits-the-profile-setup-form-with-a-valid-internet-identity-session-the-modal-must-not-show-any-authentication-error-to-a-user-who-is-actively-authenticated-on-form-submission-if-the-actor-is-null-or-unavailable-silently-wait-for-the-actor-to-be-ready-up-to-a-reasonable-timeout-before-invoking-savecalleruserprofile-if-the-call-still-fails-surface-a-generic-retry-message-never-the-authentication-failed-or-log-out-and-try-again-text-unless-the-identity-is-genuinely-expired",
+      "featureTitle": "In ProfileSetupModal.tsx, eliminate the 'Authentication failed. Please log out and log in again.' error banner that appears when the user submits the profile setup form with a valid Internet Identity session. The modal must not show any authentication error to a user who is actively authenticated. On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile. If the call still fails, surface a generic retry message — never the 'Authentication failed' or 'Log out and try again' text — unless the identity is genuinely expired.",
       "files": [
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/components/ProfileSetupModal.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -18,7 +17,27 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-13"
+        "REQ-24"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-usequeries-ts-fix-the-usesavecalleruserprofile-mutation-so-that-it-obtains-a-fresh-actor-reference-at-call-time-rather-than-relying-on-a-potentially-stale-closure-before-calling-savecalleruserprofile-confirm-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-throw-an-error-clearly-labeled-actor-not-ready-not-session-expired-so-profilesetupmodal-tsx-can-distinguish-and-handle-it-without-showing-false-authentication-failure-messages",
+      "featureTitle": "In useQueries.ts, fix the useSaveCallerUserProfile mutation so that it obtains a fresh actor reference at call time rather than relying on a potentially stale closure. Before calling saveCallerUserProfile, confirm the actor is non-null and the identity is authenticated. If the actor is unavailable, throw an error clearly labeled 'actor_not_ready' (not 'session_expired') so ProfileSetupModal.tsx can distinguish and handle it without showing false authentication failure messages.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-25"
       ],
       "confidence": "high"
     }

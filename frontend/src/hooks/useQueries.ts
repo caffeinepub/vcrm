@@ -25,7 +25,17 @@ export function useGetCallerUserProfile() {
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
+      try {
+        return await actor.getCallerUserProfile();
+      } catch (err: unknown) {
+        // The very first user has no role yet, so the backend throws "Unauthorized".
+        // Treat this as "no profile exists" so the ProfileSetupModal is shown.
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes('Unauthorized') || msg.includes('unauthorized')) {
+          return null;
+        }
+        throw err;
+      }
     },
     enabled: !!actor && !actorFetching,
     retry: false,
@@ -39,16 +49,49 @@ export function useGetCallerUserProfile() {
 }
 
 export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.saveCallerUserProfile(profile);
+      // If actor is still loading, throw a typed "not ready" error
+      if (actorFetching) {
+        const err = new Error('Actor is still initializing. Please wait a moment and try again.');
+        (err as Error & { type: string }).type = 'actor_not_ready';
+        throw err;
+      }
+
+      // If actor is not available at all, throw a typed "not ready" error
+      if (!actor) {
+        const err = new Error('Backend connection not ready. Please wait and try again.');
+        (err as Error & { type: string }).type = 'actor_not_ready';
+        throw err;
+      }
+
+      // Attempt to save the profile
+      try {
+        return await actor.saveCallerUserProfile({
+          name: profile.name,
+          email: profile.email,
+        });
+      } catch (err: unknown) {
+        // Wrap with a generic save error — do NOT label as auth/session error
+        const msg = err instanceof Error ? err.message : String(err);
+        const wrapped = new Error('Unable to save profile. Please try again. (' + msg + ')');
+        (wrapped as Error & { type: string }).type = 'save_error';
+        throw wrapped;
+      }
     },
     onSuccess: () => {
+      // Invalidate profile AND admin/approval status — saving the first profile
+      // makes the caller an admin, so we must re-fetch those queries.
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['isCallerApproved'] });
+    },
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('[useSaveCallerUserProfile] Save failed:', msg);
     },
   });
 }
@@ -265,7 +308,6 @@ export function useUpdateDeal() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
 }
@@ -281,7 +323,6 @@ export function useMoveDealStage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
 }
@@ -409,16 +450,16 @@ export function useGetAllSolarProjects() {
   });
 }
 
-export function useGetSolarProject(id: bigint | null) {
+export function useGetSolarProject(projectId: bigint | null) {
   const { actor, isFetching } = useActor();
 
   return useQuery<SolarProject | null>({
-    queryKey: ['solarProject', id?.toString()],
+    queryKey: ['solarProject', projectId?.toString()],
     queryFn: async () => {
-      if (!actor || id === null) return null;
-      return actor.getSolarProject(id);
+      if (!actor || projectId === null) return null;
+      return actor.getSolarProject(projectId);
     },
-    enabled: !!actor && !isFetching && id !== null,
+    enabled: !!actor && !isFetching && projectId !== null,
   });
 }
 
@@ -477,8 +518,24 @@ export function useUpdateSolarProject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
-      queryClient.invalidateQueries({ queryKey: ['solarProject'] });
       queryClient.invalidateQueries({ queryKey: ['customerProjects'] });
+      queryClient.invalidateQueries({ queryKey: ['solarProject'] });
+    },
+  });
+}
+
+export function useUpdateProjectStatus() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { projectId: bigint; newStatus: ProjectStatus }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateProjectStatus(params.projectId, params.newStatus);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
+      queryClient.invalidateQueries({ queryKey: ['solarProject'] });
     },
   });
 }
@@ -496,6 +553,19 @@ export function useDeleteSolarProject() {
       queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
       queryClient.invalidateQueries({ queryKey: ['customerProjects'] });
     },
+  });
+}
+
+export function useGetProjectCountByStatus() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<[bigint, bigint, bigint, bigint]>({
+    queryKey: ['projectCountByStatus'],
+    queryFn: async () => {
+      if (!actor) return [0n, 0n, 0n, 0n];
+      return actor.getProjectCountByStatus();
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 
@@ -527,26 +597,11 @@ export function useIsCallerApproved() {
   });
 }
 
-export function useRequestApproval() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.requestApproval();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['isCallerApproved'] });
-    },
-  });
-}
-
 export function useListApprovals() {
   const { actor, isFetching } = useActor();
 
   return useQuery<UserApprovalInfo[]>({
-    queryKey: ['approvals'],
+    queryKey: ['listApprovals'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.listApprovals();
@@ -565,8 +620,37 @@ export function useSetApproval() {
       return actor.setApproval(params.user, params.status);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['listApprovals'] });
+      queryClient.invalidateQueries({ queryKey: ['isCallerApproved'] });
     },
+  });
+}
+
+export function useRequestApproval() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.requestApproval();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['isCallerApproved'] });
+    },
+  });
+}
+
+export function useAdminGetSystemStats() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['adminSystemStats'],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.adminGetSystemStats();
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 
@@ -574,7 +658,7 @@ export function useAdminGetAllUsers() {
   const { actor, isFetching } = useActor();
 
   return useQuery<Principal[]>({
-    queryKey: ['adminUsers'],
+    queryKey: ['adminAllUsers'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.adminGetAllUsers();
@@ -593,21 +677,8 @@ export function useAdminAssignRole() {
       return actor.adminAssignRole(params.user, params.role);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-      queryClient.invalidateQueries({ queryKey: ['approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['listApprovals'] });
     },
-  });
-}
-
-export function useAdminGetSystemStats() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['adminSystemStats'],
-    queryFn: async () => {
-      if (!actor) return null;
-      return actor.adminGetSystemStats();
-    },
-    enabled: !!actor && !isFetching,
   });
 }

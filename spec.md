@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the first-user auto-admin approval flow and add the VCRM logo to the sidebar and login page.
+**Goal:** Fix the false "Authentication failed. Please log out and log in again." error that appears in the Profile Setup Modal when a user with a valid Internet Identity session submits the profile form.
 
 **Planned changes:**
-- Update the backend so the very first user to log in via Internet Identity is automatically granted Admin status and bypasses the "Access Pending" screen; all subsequent new users still require admin approval.
-- Save the VCRM logo image as a static asset at `frontend/public/assets/generated/vcrm-logo.png`.
-- Display the VCRM logo in the sidebar header on all authenticated pages.
-- Display the VCRM logo on the login page.
+- In `ProfileSetupModal.tsx`, remove the logic that shows the "Authentication failed. Please log out and log in again." error banner and the "Log out and try again" link for authenticated users
+- If the actor is null or unavailable at submission time, silently wait/retry for the actor to become ready before calling `saveCallerUserProfile`
+- Replace any authentication-related error messages with a neutral retry message (e.g., "Unable to save profile. Please try again.") only if all retries fail
+- In `useQueries.ts`, fix the `useSaveCallerUserProfile` mutation to fetch a fresh actor reference at call time instead of relying on a stale closure
+- Label actor-unavailable errors as `actor_not_ready` (distinct from `session_expired`) so the modal can handle them without showing false auth failure messages
 
-**User-visible outcome:** The first user to sign in is taken directly to the dashboard as Admin with no approval wait. All other new users still see the "Access Pending" screen. The VCRM logo (blue V with bar chart, orange sphere, silver "CRM" text) appears in the sidebar and on the login page.
+**User-visible outcome:** A user with a valid Internet Identity session can fill in their Full Name and Email and click "Save Profile & Continue" without seeing any authentication error. The modal saves the profile and redirects to the dashboard successfully.

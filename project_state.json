@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 17,
   "summary": "Building VCRM — a web-based CRM application using React + TypeScript with Motoko canister backend on the Internet Computer. Features include login/signup via Internet Identity, dashboard with leads/deals/revenue, lead and customer management, follow-up reminders, deal pipeline, search/filter, admin panel, dark/light mode, blue professional theme, and solar project management features (site survey, system size in kW, installation status, customer location map).",
   "architectural_notes": [
     "Frontend: React + TypeScript, Tailwind CSS, mobile-responsive",
@@ -8,9 +8,11 @@
     "Auth: Internet Identity (passkeys, Google, Apple, Microsoft)",
     "Color theme: Blue-based professional, supports dark/light mode"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Session expiry error shown to users: 'Your session may have expired. Please log out and log in again.'",
+    "Authentication failed error: 'Authentication failed. Please log out and log in again.' shown unexpectedly to users with valid sessions."
+  ],
   "isFixRequest": true,
-  "imageRequirements": "## Required Images\n- VCRM brand logo with a blue 3D V-shape and bar chart icon, orange sphere accent, orbital swoosh ring, and silver-gray 'CRM' text on white background (vcrm-logo.dim_512x512.png)",
   "existing_features": [
     {
       "id": "feature-implement-internet-identity-based-login-and-signup-so-users-can-authenticate-securely-before-accessing-the-app",
@@ -107,6 +109,78 @@
         "REQ-13"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-on-the-frontend-after-a-user-logs-in-via-internet-identity-check-whether-the-user-s-profile-has-admin-role-and-approved-status-before-rendering-the-access-pending-screen-if-the-user-is-the-first-user-auto-admin-redirect-them-directly-to-the-dashboard-without-displaying-the-access-pending-or-approval-request-ui",
+      "title": "On the frontend, after a user logs in via Internet Identity, check whether the user's profile has Admin role and approved status before rendering the 'Access Pending' screen. If the user is the first user (auto-admin), redirect them directly to the dashboard without displaying the Access Pending or approval request UI.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-frontend-after-internet-identity-login-completes-and-the-user-profile-is-fetched-check-if-the-profile-has-admin-role-and-approved-status-if-both-conditions-are-true-redirect-immediately-to-the-dashboard-the-access-pending-screen-and-request-approval-flow-must-never-be-shown-to-an-admin-approved-user-this-must-correctly-handle-the-first-user-auto-admin-case-so-they-never-see-the-access-pending-screen",
+      "title": "On the frontend, after Internet Identity login completes and the user profile is fetched, check if the profile has Admin role AND Approved status. If both conditions are true, redirect immediately to the dashboard. The 'Access Pending' screen and 'Request Approval' flow must never be shown to an Admin-approved user. This must correctly handle the first-user auto-admin case so they never see the Access Pending screen.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-failed-to-save-profile-please-try-again-error-that-occurs-when-a-user-submits-the-profile-setup-modal-after-logging-in-via-internet-identity-the-usesavecalleruserprofile-mutation-in-usequeries-ts-must-successfully-persist-the-name-and-email-to-the-motoko-backend-ensure-proper-error-handling-and-that-the-modal-closes-and-the-user-proceeds-to-the-dashboard-on-success",
+      "title": "Fix the 'Failed to save profile. Please try again.' error that occurs when a user submits the Profile Setup modal after logging in via Internet Identity. The useSaveCallerUserProfile mutation in useQueries.ts must successfully persist the name and email to the Motoko backend. Ensure proper error handling and that the modal closes and the user proceeds to the dashboard on success.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-application-s-visual-theme-color-palette-replace-the-current-deep-blue-primary-color-scheme-with-a-rich-emerald-green-and-dark-teal-palette-as-the-primary-brand-colors-while-retaining-white-backgrounds-clean-typography-and-the-existing-card-based-layout-update-css-custom-properties-in-frontend-src-index-css-and-frontend-tailwind-config-js-to-reflect-the-new-color-tokens-for-sidebar-primary-buttons-accents-and-active-states-keep-the-vcrm-logo-and-orange-accent-highlights-unchanged",
+      "title": "Update the application's visual theme color palette. Replace the current deep-blue primary color scheme with a rich emerald green and dark teal palette as the primary brand colors, while retaining white backgrounds, clean typography, and the existing card-based layout. Update CSS custom properties in frontend/src/index.css and frontend/tailwind.config.js to reflect the new color tokens for sidebar, primary buttons, accents, and active states. Keep the VCRM logo and orange accent highlights unchanged.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-failed-to-save-profile-please-try-again-error-that-appears-when-a-user-submits-the-profile-setup-modal-welcome-to-vcrm-after-logging-in-via-internet-identity-the-savecalleruserprofile-backend-call-must-succeed-the-modal-must-close-on-success-and-the-user-must-be-redirected-to-the-dashboard-investigate-and-resolve-any-mismatch-between-the-motoko-backend-s-savecalleruserprofile-function-signature-return-type-and-the-frontend-s-usesavecalleruserprofile-mutation-in-usequeries-ts-ensure-error-handling-surfaces-the-real-underlying-error-in-the-console-for-diagnosis",
+      "title": "Fix the 'Failed to save profile. Please try again.' error that appears when a user submits the Profile Setup modal (Welcome to VCRM!) after logging in via Internet Identity. The saveCallerUserProfile backend call must succeed, the modal must close on success, and the user must be redirected to the dashboard. Investigate and resolve any mismatch between the Motoko backend's saveCallerUserProfile function signature/return type and the frontend's useSaveCallerUserProfile mutation in useQueries.ts. Ensure error handling surfaces the real underlying error in the console for diagnosis.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-profilesetupmodal-tsx-fix-the-your-session-may-have-expired-please-log-out-and-log-in-again-error-that-appears-when-a-user-submits-the-profile-setup-form-this-error-is-incorrectly-surfaced-when-the-backend-call-fails-due-to-a-stale-or-missing-actor-reference-the-fix-must-1-detect-when-the-actor-is-not-initialized-or-the-identity-has-expired-2-attempt-to-silently-re-initialize-the-actor-before-retrying-the-savecalleruserprofile-call-3-only-show-a-meaningful-inline-error-message-if-the-retry-also-fails-and-4-never-show-the-session-expiry-message-to-a-user-who-has-a-valid-active-internet-identity-session",
+      "title": "In ProfileSetupModal.tsx, fix the 'Your session may have expired. Please log out and log in again.' error that appears when a user submits the profile setup form. This error is incorrectly surfaced when the backend call fails due to a stale or missing actor reference. The fix must: (1) detect when the actor is not initialized or the identity has expired, (2) attempt to silently re-initialize the actor before retrying the saveCallerUserProfile call, (3) only show a meaningful inline error message if the retry also fails, and (4) never show the session expiry message to a user who has a valid active Internet Identity session.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-usequeries-ts-update-the-usesavecalleruserprofile-mutation-to-ensure-the-actor-instance-is-freshly-obtained-at-call-time-not-captured-in-a-stale-closure-before-invoking-savecalleruserprofile-on-the-backend-verify-the-actor-is-available-and-the-identity-is-authenticated-if-the-actor-is-null-or-undefined-at-call-time-throw-a-descriptive-error-that-distinguishes-between-actor-not-ready-and-session-expired-so-profilesetupmodal-tsx-can-display-the-correct-message",
+      "title": "In useQueries.ts, update the useSaveCallerUserProfile mutation to ensure the actor instance is freshly obtained at call time (not captured in a stale closure). Before invoking saveCallerUserProfile on the backend, verify the actor is available and the identity is authenticated. If the actor is null or undefined at call time, throw a descriptive error that distinguishes between 'actor not ready' and 'session expired', so ProfileSetupModal.tsx can display the correct message.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-profilesetupmodal-tsx-eliminate-the-authentication-failed-please-log-out-and-log-in-again-error-banner-that-appears-when-the-user-submits-the-profile-setup-form-with-a-valid-internet-identity-session-the-modal-must-not-show-any-authentication-error-to-a-user-who-is-actively-authenticated-on-form-submission-if-the-actor-is-null-or-unavailable-silently-wait-for-the-actor-to-be-ready-up-to-a-reasonable-timeout-before-invoking-savecalleruserprofile-if-the-call-still-fails-surface-a-generic-retry-message-never-the-authentication-failed-or-log-out-and-try-again-text-unless-the-identity-is-genuinely-expired",
+      "title": "In ProfileSetupModal.tsx, eliminate the 'Authentication failed. Please log out and log in again.' error banner that appears when the user submits the profile setup form with a valid Internet Identity session. The modal must not show any authentication error to a user who is actively authenticated. On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile. If the call still fails, surface a generic retry message — never the 'Authentication failed' or 'Log out and try again' text — unless the identity is genuinely expired.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-usequeries-ts-fix-the-usesavecalleruserprofile-mutation-so-that-it-obtains-a-fresh-actor-reference-at-call-time-rather-than-relying-on-a-potentially-stale-closure-before-calling-savecalleruserprofile-confirm-the-actor-is-non-null-and-the-identity-is-authenticated-if-the-actor-is-unavailable-throw-an-error-clearly-labeled-actor-not-ready-not-session-expired-so-profilesetupmodal-tsx-can-distinguish-and-handle-it-without-showing-false-authentication-failure-messages",
+      "title": "In useQueries.ts, fix the useSaveCallerUserProfile mutation so that it obtains a fresh actor reference at call time rather than relying on a potentially stale closure. Before calling saveCallerUserProfile, confirm the actor is non-null and the identity is authenticated. If the actor is unavailable, throw an error clearly labeled 'actor_not_ready' (not 'session_expired') so ProfileSetupModal.tsx can distinguish and handle it without showing false authentication failure messages.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -176,6 +250,48 @@
       "reqIds": [
         "REQ-12"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "In the Motoko backend, modify the user registration/login logic so that the very first user who authenticates via Internet Identity is automatically assigned the Admin role and approved status, without requiring any manual approval. All subsequent users should continue through the existing approval flow.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "In the Motoko backend, ensure that the very first user who authenticates via Internet Identity is automatically assigned the Admin role and 'approved' status at the moment their profile is created, with no additional approval step required. All subsequent users must continue through the existing manual approval flow.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Fix errors in the current build and change/update the theme color",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Fix 'Your session may have expired. Please log out and log in again.' error — handle session expiry gracefully and auto-recover or prompt user to re-authenticate without showing this error unexpectedly.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "In Layout.tsx, handle the case where the actor becomes unavailable mid-session (e.g., after an identity expiry). When any backend query or mutation fails with an authentication-related error, display a non-blocking toast or banner prompting the user to re-authenticate, rather than leaving them stuck on a broken state. Provide a visible 'Log out and log in again' action button in such cases.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Fix 'Authentication failed. Please log out and log in again.' error and 'Log out and try again' message showing unexpectedly — handle authentication failures gracefully without surfacing this error to users with valid sessions.",
+      "reqIds": [],
       "status": "pending"
     }
   ],

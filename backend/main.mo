@@ -9,11 +9,11 @@ import Iter "mo:core/Iter";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import UserApproval "user-approval/approval";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+// Setup access control on upgrade via with-clause
+
 actor {
-  // Setup access control
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -62,7 +62,8 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    // Allow the first admin (who may not yet have #user role assigned) to read their own profile.
+    if (not (?caller == firstAdmin or AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can get their profile");
     };
     userProfiles.get(caller);
@@ -76,10 +77,26 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+    // If no first admin has been set yet, this caller becomes the first admin.
+    // They are automatically assigned the admin role and marked as approved.
+    switch (firstAdmin) {
+      case (null) {
+        // Bootstrap: assign this caller as the first admin.
+        firstAdmin := ?caller;
+        // Assign the admin role using the prefabricated access control system.
+        AccessControl.assignRole(accessControlState, caller, caller, #admin);
+        // Mark the first admin as approved in the approval system.
+        UserApproval.setApproval(approvalState, caller, #approved);
+        userProfiles.add(caller, profile);
+      };
+      case (?_) {
+        // All subsequent users must already have #user permission (i.e., be approved).
+        if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+          Runtime.trap("Unauthorized: Only users can save profiles");
+        };
+        userProfiles.add(caller, profile);
+      };
     };
-    userProfiles.add(caller, profile);
   };
 
   // ─── Types ───────────────────────────────────────────────────────────────────
@@ -512,7 +529,6 @@ actor {
   };
 
   public shared ({ caller }) func adminAssignRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // AccessControl.assignRole already includes admin-only guard internally
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 
@@ -537,6 +553,12 @@ actor {
     };
   };
 
+  // ─── Internal Helpers ────────────────────────────────────────────────────────
+
+  // A caller is considered approved if they are:
+  //   1. The recorded first admin principal, OR
+  //   2. Have the #admin role in the access control system, OR
+  //   3. Have been explicitly approved in the user-approval system.
   func assertCallerApproved(caller : Principal) {
     if (?caller == firstAdmin) { return () };
     let isCallerAdmin = AccessControl.hasPermission(accessControlState, caller, #admin);

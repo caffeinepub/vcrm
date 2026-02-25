@@ -1,43 +1,48 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T15:38:57.566Z",
-  "summary": "The diff implements both REQ-12 (first-user auto-admin flow) and REQ-13 (VCRM logo display). REQ-12 is addressed in backend/main.mo with a firstAdmin principal and auto-approval logic, plus migration.mo for state migration. REQ-13 is addressed in Layout.tsx and LoginPage.tsx with logo images rendered from '/assets/generated/vcrm-logo.dim_512x512.png'. However, the build request specifies the logo should be saved at 'frontend/public/assets/generated/vcrm-logo.png', but the diff references 'vcrm-logo.dim_512x512.png' instead, and no binary asset file addition is evident in the diff.",
+  "generatedAt": "2026-02-25T16:46:22.214Z",
+  "summary": "Both REQ-24 and REQ-25 appear to be substantially implemented. ProfileSetupModal.tsx removes the 'Authentication failed / Log out and try again' path and shows only generic error messages. useQueries.ts adds typed 'actor_not_ready' errors. However, REQ-24 requires a silent retry mechanism (waiting up to a reasonable timeout before invoking saveCallerUserProfile), and REQ-25 requires fetching a fresh actor reference at call time rather than relying on a potentially stale closure — the diff still uses the hook-captured actor.",
   "missing_requirements": [
     {
-      "id": "REQ-13",
-      "requirement": "The logo image is served from frontend/public/assets/generated/vcrm-logo.png",
-      "reason": "The diff references the logo at '/assets/generated/vcrm-logo.dim_512x512.png' in all render locations, not 'vcrm-logo.png' as specified. Additionally, no binary image file is shown as added to frontend/public/assets/generated/.",
+      "id": "REQ-24",
+      "requirement": "On form submission, if the actor is null or unavailable, silently wait for the actor to be ready (up to a reasonable timeout) before invoking saveCallerUserProfile.",
+      "reason": "The diff does not implement a silent wait/retry loop on form submission. If the actor is not ready at submission time, the mutation immediately throws 'actor_not_ready'. There is no polling or timeout-based wait before the first invocation attempt — the user must manually click retry.",
       "evidence": [
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/components/ProfileSetupModal.tsx"
       ]
     },
     {
-      "id": "REQ-12",
-      "requirement": "The first user to authenticate via Internet Identity is automatically set as Admin and approved.",
-      "reason": "The backend tracks a firstAdmin principal and short-circuits isCallerApproved for that principal, but no explicit AccessControl.grantAdmin or role assignment call is visible for the first user in the shown code. The mechanism for actually registering the first login and granting admin role is not clearly implemented in the truncated diff.",
+      "id": "REQ-25",
+      "requirement": "The mutation always fetches the latest actor instance at invocation time rather than relying on a potentially stale closure.",
+      "reason": "The useSaveCallerUserProfile hook still captures actor and actorFetching from the useActor hook closure at render time. There is no mechanism to re-fetch or re-obtain a fresh actor reference at the moment mutationFn is actually invoked.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Migration module added to handle legacy actor state migration with a firstAdmin field",
-      "reason": "The build request does not mention any data migration requirement. The migration.mo file was added beyond the scope of the stated requirements.",
+      "description": "Actor wait timer UI showing 'Connecting to backend… please wait.' after 2 seconds and a separate timed-out UI block after 12 seconds of actor unavailability.",
+      "reason": "The build request only asks for silent waiting before the first invocation attempt and generic error messaging. A visible countdown/loading indicator in the modal UI was not requested.",
       "evidence": [
-        "backend/migration.mo"
+        "frontend/src/components/ProfileSetupModal.tsx"
+      ]
+    },
+    {
+      "description": "A handleRetry function that invalidates the 'actor' query cache entry via queryClient.invalidateQueries.",
+      "reason": "Invalidating the actor query on retry was not specified in either REQ-24 or REQ-25.",
+      "evidence": [
+        "frontend/src/components/ProfileSetupModal.tsx"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.78,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

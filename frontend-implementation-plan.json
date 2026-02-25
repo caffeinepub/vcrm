@@ -1,32 +1,40 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Access Pending issue and add VCRM logo",
+  "title": "Fix Profile Setup Modal Authentication Error",
   "requirements": [
     {
-      "id": "REQ-13",
-      "summary": "Display the VCRM logo in the sidebar header and on the login page",
+      "id": "REQ-24",
+      "summary": "Eliminate false 'Authentication failed' error in ProfileSetupModal when user has valid Internet Identity session",
       "acceptanceCriteria": [
-        "The VCRM logo is visible at the top of the sidebar navigation on all authenticated pages.",
-        "The VCRM logo is visible on the login page.",
-        "The logo renders correctly in both light and dark modes.",
-        "The logo image is served from frontend/public/assets/generated/vcrm-logo.png."
+        "A user with a valid Internet Identity session who fills in Full Name and Email and clicks 'Save Profile & Continue' does NOT see the 'Authentication failed. Please log out and log in again.' error.",
+        "The 'Log out and try again' link is never shown to a user with an active, authenticated session.",
+        "If the actor is momentarily unavailable at submission time, the modal retries silently before displaying any error.",
+        "On successful saveCallerUserProfile call, the modal closes and the user is redirected to the dashboard.",
+        "If the call genuinely fails after retry, a neutral error message is shown (e.g., 'Unable to save profile. Please try again.') without referencing session expiry or authentication failure."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/generated/vcrm-logo.dim_512x512.png",
-          "operation": "create",
-          "description": "Save the generated VCRM logo image (blue 3D V-shape with bar chart icon, orange sphere accent, orbital swoosh ring, and silver-gray 'CRM' text on white background) at this workspace path. This image will be referenced by the frontend components."
-        },
-        {
-          "path": "frontend/src/components/Layout.tsx",
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
           "operation": "modify",
-          "description": "Add the VCRM logo to the sidebar header at the top of the navigation area. Import and render an <img> element with src pointing to '/assets/generated/vcrm-logo.dim_512x512.png'. Apply appropriate sizing (e.g., h-12 or h-16), alt text 'VCRM Logo', and dark mode compatibility. Position the logo above the existing navigation links in the sidebar."
-        },
+          "description": "Remove the hardcoded 'Authentication failed. Please log out and log in again.' error banner that appears incorrectly for authenticated users. Replace the error handling logic to distinguish between actor-not-ready errors and genuine failures. When the mutation fails with an 'actor_not_ready' error type, implement a silent retry mechanism with a reasonable timeout (e.g., 5 seconds) before showing any error. If a retry fails or times out, display a generic error message such as 'Unable to save profile. Please try again.' instead of referencing authentication or session expiry. Completely remove any UI elements or logic that render the 'Log out and try again' link. Ensure that on successful profile save, the modal closes and the user is navigated to the dashboard as expected."
+        }
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "summary": "Fix useSaveCallerUserProfile mutation to obtain fresh actor reference and label errors correctly",
+      "acceptanceCriteria": [
+        "The mutation always fetches the latest actor instance at invocation time.",
+        "Errors are typed/labeled so the modal can distinguish 'actor not ready' from 'session expired'.",
+        "No 'Authentication failed' error is thrown when the user has a valid active session.",
+        "The mutation succeeds and returns the expected result when the actor is available and the user is authenticated."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/pages/LoginPage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add the VCRM logo to the login page layout. Import and render an <img> element with src pointing to '/assets/generated/vcrm-logo.dim_512x512.png' in a prominent position on the page (e.g., centered above the sign-in button or in the feature highlights panel). Apply appropriate sizing, alt text 'VCRM Logo', and ensure it is visible in both light and dark modes."
+          "description": "Refactor the useSaveCallerUserProfile mutation to always obtain a fresh actor reference at the time of mutation invocation rather than relying on a potentially stale closure. Within the mutationFn, explicitly check if actor is null or undefined before attempting to call saveCallerUserProfile. If the actor is unavailable, throw a structured error object with a type property set to 'actor_not_ready' (never 'session_expired') so that ProfileSetupModal.tsx can distinguish this case. If the identity is genuinely expired or unavailable, label that error distinctly as well. Ensure that when the actor is available and the user is authenticated, the mutation calls saveCallerUserProfile successfully and returns the expected result without throwing false authentication errors."
         }
       ]
     }

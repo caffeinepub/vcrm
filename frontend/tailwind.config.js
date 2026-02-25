@@ -68,9 +68,9 @@ export default {
           border: 'oklch(var(--sidebar-border))',
           ring: 'oklch(var(--sidebar-ring))'
         },
-        navy: 'oklch(var(--navy))',
+        teal: 'oklch(var(--teal))',
         orange: 'oklch(var(--orange))',
-        'blue-mid': 'oklch(var(--blue-mid))',
+        'green-mid': 'oklch(var(--green-mid))',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -79,8 +79,8 @@ export default {
       },
       boxShadow: {
         xs: '0 1px 2px 0 rgba(0,0,0,0.05)',
-        card: '0 2px 8px 0 rgba(30,58,138,0.08)',
-        'card-hover': '0 4px 16px 0 rgba(30,58,138,0.14)',
+        card: '0 2px 8px 0 rgba(10,80,60,0.08)',
+        'card-hover': '0 4px 16px 0 rgba(10,80,60,0.14)',
       },
       keyframes: {
         'accordion-down': {

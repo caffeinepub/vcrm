@@ -30,10 +30,11 @@ export default function Layout() {
   const { identity, clear, isInitializing } = useInternetIdentity();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+
+  const { data: userProfile, isLoading: profileLoading, isFetched: profileFetched } = useGetCallerUserProfile();
   const { data: overdueReminders } = useGetOverdueReminders();
-  const { data: isAdmin } = useIsCallerAdmin();
-  const { data: isApproved } = useIsCallerApproved();
+  const { data: isAdmin, isLoading: isAdminLoading, isFetched: isAdminFetched } = useIsCallerAdmin();
+  const { data: isApproved, isLoading: isApprovedLoading, isFetched: isApprovedFetched } = useIsCallerApproved();
   const requestApproval = useRequestApproval();
 
   const isAuthenticated = !!identity;
@@ -44,7 +45,67 @@ export default function Layout() {
     return null;
   }
 
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
+  // Show loading screen while actor/identity is initializing or profile is still loading.
+  // We do NOT wait for admin/approval here — those can resolve after profile is known.
+  const profileStillLoading = isAuthenticated && (profileLoading || !profileFetched);
+
+  if (profileStillLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/assets/generated/vcrm-logo.dim_512x512.png"
+            alt="VCRM Logo"
+            className="h-16 w-auto object-contain animate-pulse"
+          />
+          <p className="text-muted-foreground text-sm">Loading your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Profile setup: show modal when profile is confirmed null (not just loading).
+  // We show this BEFORE checking admin/approval — saving the profile is what
+  // bootstraps the first admin and grants roles.
+  const showProfileSetup = isAuthenticated && profileFetched && userProfile === null;
+
+  if (showProfileSetup) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/assets/generated/vcrm-logo.dim_512x512.png"
+            alt="VCRM Logo"
+            className="h-16 w-auto object-contain"
+          />
+          <p className="text-muted-foreground text-sm">Setting up your account...</p>
+        </div>
+        <ProfileSetupModal />
+      </div>
+    );
+  }
+
+  // After profile is confirmed to exist, wait for admin/approval status to resolve.
+  const statusLoading =
+    isAdminLoading ||
+    isApprovedLoading ||
+    !isAdminFetched ||
+    !isApprovedFetched;
+
+  if (isAuthenticated && statusLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/assets/generated/vcrm-logo.dim_512x512.png"
+            alt="VCRM Logo"
+            className="h-16 w-auto object-contain animate-pulse"
+          />
+          <p className="text-muted-foreground text-sm">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     await clear();
@@ -124,7 +185,7 @@ export default function Layout() {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="flex-1 justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
           >
-            {theme === 'dark' ? <Moon size={15} className="mr-2" /> : <Moon size={15} className="mr-2" />}
+            <Moon size={15} className="mr-2" />
             {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           </Button>
           <Button
@@ -140,8 +201,9 @@ export default function Layout() {
     </div>
   );
 
-  // Not approved state
-  if (isApproved === false && !isAdmin) {
+  // Only show Access Pending when we are CERTAIN the user is not an admin AND not approved.
+  // Both queries are fully fetched at this point, and the profile exists (setup is complete).
+  if (isApprovedFetched && isAdminFetched && isApproved === false && isAdmin !== true) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
         <div className="max-w-md w-full text-center space-y-6">
@@ -228,8 +290,6 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
-
-      {showProfileSetup && <ProfileSetupModal />}
     </div>
   );
 }
