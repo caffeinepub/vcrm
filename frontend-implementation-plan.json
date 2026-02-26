@@ -1,55 +1,117 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend: Super Admin Auth Guard & Admin Panel for User Approval",
+  "title": "Fix sidebar visibility, remove Refer & Earn, implement real backend data, and enable all action buttons",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Fix Layout.tsx auth guard so vcrm.com@gmail.com or admin role users skip 'Access Pending Approval' screen and go directly to Dashboard",
+      "id": "REQ-1",
+      "summary": "Fix sidebar text and icon visibility to ensure all navigation labels render in white or light-colored text against the purple background",
       "acceptanceCriteria": [
-        "After OTP login with vcrm.com@gmail.com, the user is immediately on the Dashboard page",
-        "The 'Access Pending Approval' screen is never displayed to the Super Admin user",
-        "Other non-approved users still see the 'Access Pending Approval' screen"
+        "All sidebar menu item labels are white or light-colored and clearly legible against the purple background",
+        "Icons beside each menu item are also light-colored and visible",
+        "Active/selected menu item has a visually distinct highlight that remains readable"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/Layout.tsx",
           "operation": "modify",
-          "description": "Update the conditional logic that checks approval status. Add an early check: if the user's email is 'vcrm.com@gmail.com' (obtained from userProfile) OR if userRole is 'admin', redirect to '/dashboard' and skip the pending approval screen entirely. Ensure non-admin, non-approved users still see the 'Access Pending Approval' message. Use backend methods isCallerApproved and getCallerUserRole to determine approval and role status."
+          "description": "Update sidebar styling to ensure all navigation text and icons use white or light colors (text-white, text-gray-100, or similar Tailwind classes) for visibility against the purple background. Update active/selected state styling to maintain readability with a distinct highlight (e.g., bg-white/10 or bg-purple-600). Remove any dark text classes (text-gray-600, text-gray-900) from sidebar navigation items."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Remove the 'Refer & Earn' menu item completely from the sidebar navigation",
+      "acceptanceCriteria": [
+        "Sidebar does not contain a 'Refer & Earn' link or section",
+        "Remaining sidebar items are: Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/Layout.tsx",
+          "operation": "modify",
+          "description": "Remove the 'Refer & Earn' navigation item and its associated Link component from the sidebar menu. Ensure the sidebar contains only: Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, and Sign Out."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Build a fully functional Admin Panel page with pending/approved/rejected user lists, Approve/Reject actions, and admin-only sidebar link",
+      "summary": "Dashboard must display only real data fetched from the backend, starting at 0 when no data exists and updating automatically as data is added",
       "acceptanceCriteria": [
-        "Admin Panel page lists all pending users with name, email, and an Approve/Reject action per user",
-        "Clicking Approve changes the user's status and moves them out of the pending list",
-        "Clicking Reject blocks the user and removes them from the pending list",
-        "The page shows separate sections or tabs for Pending, Approved, and Rejected users",
-        "The Admin Panel link appears in the sidebar only for admin/owner role users",
-        "Non-admin users cannot navigate to or access the Admin Panel page"
+        "Dashboard shows 0 for all counters and charts on a fresh start with no data",
+        "After adding a lead or deal, the dashboard stats reflect the new totals without a full page reload",
+        "No hardcoded or sample/mock data is displayed on the dashboard"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminPage.tsx",
-          "operation": "create",
-          "description": "Create a full admin panel page that: (1) Calls listApprovals() from the backend to fetch all users and their approval status. (2) Displays three separate sections or tabs for Pending, Approved, and Rejected users. (3) For each pending user, shows their principal (or email if available via getUserProfile), and provides Approve and Reject buttons. (4) On Approve, calls setApproval(user, { approved }) and refetches the list. (5) On Reject, calls setApproval(user, { rejected }) and refetches. (6) Uses TanStack Query hooks from useQueries.ts (useListApprovals, useSetApproval) to interact with the backend. (7) Shows loading and error states. (8) Includes a guard at the top: if the user is not an admin (via getCallerUserRole or isCallerAdmin), show an AccessDeniedPage or redirect to /dashboard. Use the authorization component's backend methods to verify admin role. Verify the component's usage instructions before implementing."
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded or sample data with real backend queries using useGetAllLeads and useGetAllDeals hooks. Calculate metrics (lead count, deal count, pipeline stats) from fetched data. Ensure counters start at 0 when no data exists. Remove any mock data constants or sample data usage. Display loading states while data is being fetched."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Pipeline page must display only deals that have been actually added by the user, starting empty and updating automatically when new deals are added",
+      "acceptanceCriteria": [
+        "Pipeline board is empty when no deals have been added",
+        "Deals appear in the correct stage column after being added",
+        "No hardcoded or sample deals are shown",
+        "Moving a deal between stages updates the backend and is reflected immediately"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/DealsPage.tsx",
+          "operation": "modify",
+          "description": "Ensure the page uses useGetAllDeals hook to fetch real backend data. Remove any hardcoded or sample deal data. Group deals by stage (New, In Progress, Won, Lost) from the fetched data. Ensure the board displays empty columns when no deals exist for a stage. Verify that drag-and-drop or move-stage actions trigger the useMoveDealStage mutation and refetch deals to reflect changes immediately."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Make all action buttons fully functional: 'Add Contact', 'Add Lead', 'Add Deal', and other create/edit/delete buttons must work correctly",
+      "acceptanceCriteria": [
+        "Clicking 'Add Contact' opens the contact/lead form dialog and successfully saves to the backend",
+        "Clicking 'Add Deal' opens the deal form dialog and successfully saves to the backend",
+        "Edit and delete buttons on leads, contacts, and deals all work correctly",
+        "Success/error toast notifications appear after form submissions",
+        "Lists and counters update immediately after any create/edit/delete action"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ContactsPage.tsx",
+          "operation": "modify",
+          "description": "Verify that the 'Add Lead' button is wired to open the AddLeadModal component. Ensure the modal's form submission calls the useAddLead mutation hook and displays a success toast on completion. Ensure the page refetches lead data after successful submission to reflect new leads immediately."
         },
         {
-          "path": "frontend/src/components/Layout.tsx",
+          "path": "frontend/src/pages/LeadsPage.tsx",
           "operation": "modify",
-          "description": "Add a new navigation link in the sidebar for 'Admin Panel' that routes to '/admin'. Conditionally render this link only when the user's role is 'admin' (use getCallerUserRole from the backend). Place the link below 'Solar Projects' and above 'Profile'. Use the same icon pattern as other sidebar items (e.g., a shield or user-check icon)."
+          "description": "Verify that the 'Add Lead' button is wired to open the LeadFormDialog component. Ensure edit buttons on lead cards open the LeadFormDialog with pre-filled data. Verify delete buttons open the DeleteConfirmationDialog and call the useDeleteLead mutation. Ensure all mutations trigger toast notifications and refetch lead data to update the UI immediately."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/DealsPage.tsx",
           "operation": "modify",
-          "description": "Register a new route for '/admin' that renders the AdminPage component. Ensure it follows the same lazy-loading or direct-import pattern used for other pages in the router configuration."
+          "description": "Verify that the 'Add Deal' button is wired to open the DealFormDialog component. Ensure edit and delete actions on deal cards (via DealCard component dropdown) trigger the correct mutations (useUpdateDeal, useDeleteDeal). Verify that all mutations display toast notifications and refetch deal data to update the pipeline board immediately."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/AddLeadModal.tsx",
           "operation": "modify",
-          "description": "Add TanStack Query hooks for admin operations if not already present: useListApprovals (query that calls listApprovals()), useSetApproval (mutation that calls setApproval(user, status) and invalidates the listApprovals query), and useGetUserProfile (query that calls getUserProfile(user) to fetch individual user profiles by principal). Ensure these hooks return proper loading, error, and data states, and follow the existing pattern in the file."
+          "description": "Ensure the form submit handler calls the useAddLead mutation hook with correct field values (name, contact, status, notes). Verify toast notifications are displayed on success and error. Ensure the modal closes and the parent page refetches data after successful submission."
+        },
+        {
+          "path": "frontend/src/components/LeadFormDialog.tsx",
+          "operation": "modify",
+          "description": "Ensure the form submit handler calls either useAddLead (for new leads) or useUpdateLead (for editing) mutation hooks with correct field values. Verify toast notifications are displayed on success and error. Ensure the dialog closes and the parent page refetches data after successful submission."
+        },
+        {
+          "path": "frontend/src/components/DealFormDialog.tsx",
+          "operation": "modify",
+          "description": "Ensure the form submit handler calls either useAddDeal (for new deals) or useUpdateDeal (for editing) mutation hooks with correct field values (title, value, customerId, stage). Verify toast notifications are displayed on success and error. Ensure the dialog closes and the parent page refetches data after successful submission."
+        },
+        {
+          "path": "frontend/src/components/DealCard.tsx",
+          "operation": "modify",
+          "description": "Verify that the edit action opens the DealFormDialog with pre-filled deal data. Verify that the delete action opens the DeleteConfirmationDialog and calls the useDeleteDeal mutation on confirmation. Verify that move-stage actions call the useMoveDealStage mutation. Ensure all actions trigger toast notifications and cause parent components to refetch data."
         }
       ]
     }

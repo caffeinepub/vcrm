@@ -5,6 +5,12 @@ import { Toaster } from '@/components/ui/sonner';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import ContactsPage from './pages/ContactsPage';
+import PipelinePage from './pages/PipelinePage';
+import LeadSummaryReportPage from './pages/LeadSummaryReportPage';
+import FollowupDetailsPage from './pages/FollowupDetailsPage';
+import TemplatesPage from './pages/TemplatesPage';
+import ReportsPage from './pages/ReportsPage';
 import LeadsPage from './pages/LeadsPage';
 import CustomersPage from './pages/CustomersPage';
 import CustomerDetailPage from './pages/CustomerDetailPage';
@@ -53,6 +59,44 @@ const dashboardRoute = createRoute({
   component: DashboardPage,
 });
 
+// New CRM routes
+const contactsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/contacts',
+  component: ContactsPage,
+});
+
+const pipelineRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/pipeline',
+  component: PipelinePage,
+});
+
+const leadSummaryRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/pipeline/lead-summary',
+  component: LeadSummaryReportPage,
+});
+
+const followupRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/followup/$id',
+  component: FollowupDetailsPage,
+});
+
+const templatesRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/templates',
+  component: TemplatesPage,
+});
+
+const reportsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/reports',
+  component: ReportsPage,
+});
+
+// Legacy routes (kept for backward compatibility)
 const leadsRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/leads',
@@ -118,6 +162,12 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   layoutRoute.addChildren([
     dashboardRoute,
+    contactsRoute,
+    pipelineRoute,
+    leadSummaryRoute,
+    followupRoute,
+    templatesRoute,
+    reportsRoute,
     leadsRoute,
     customersRoute,
     customerDetailRoute,

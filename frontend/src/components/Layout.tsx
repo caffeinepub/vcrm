@@ -1,242 +1,226 @@
-import { Outlet, useNavigate, useLocation } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { useState } from 'react';
 import {
   LayoutDashboard,
   Users,
-  UserCheck,
-  Briefcase,
-  Bell,
-  Sun,
-  User,
-  LogOut,
+  GitBranch,
+  FileText,
+  BarChart2,
+  Settings2,
   Shield,
-  Clock,
+  Settings,
+  LogOut,
+  ChevronRight,
+  ChevronDown,
+  Menu,
+  X,
 } from 'lucide-react';
-import { isOTPAuthenticated, clearOTPAuthenticated } from '../pages/LoginPage';
-import { useGetCallerRole, useIsCallerApproved, useRequestApproval } from '../hooks/useQueries';
-import { UserRole } from '../backend';
-import ProfileSetupModal from './ProfileSetupModal';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import ProfileSetupModal from './ProfileSetupModal';
 
 const SUPER_ADMIN_EMAIL = 'vcrm.com@gmail.com';
 
-function getSuperAdminEmail(): string | null {
-  return localStorage.getItem('vcrm_logged_in_email');
-}
-
-function isSuperAdminEmail(): boolean {
-  const email = getSuperAdminEmail();
-  return email === SUPER_ADMIN_EMAIL;
-}
-
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/leads', label: 'Leads', icon: Users },
-  { path: '/customers', label: 'Customers', icon: UserCheck },
-  { path: '/deals', label: 'Deals', icon: Briefcase },
-  { path: '/reminders', label: 'Reminders', icon: Bell },
-  { path: '/solar-projects', label: 'Solar Projects', icon: Sun },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/layout/dashboard' },
+  { label: 'Contacts', icon: Users, path: '/layout/contacts' },
+  { label: 'Pipeline', icon: GitBranch, path: '/layout/pipeline' },
+  { label: 'Templates', icon: FileText, path: '/layout/templates' },
+  { label: 'Reports', icon: BarChart2, path: '/layout/reports' },
+  {
+    label: 'Other Services',
+    icon: Settings2,
+    path: '/layout/other-services',
+    children: [
+      { label: 'Solar Projects', path: '/layout/solar-projects' },
+      { label: 'Customers', path: '/layout/customers' },
+    ],
+  },
+  { label: 'Admin', icon: Shield, path: '/layout/admin' },
+];
+
+const bottomNavItems = [
+  { label: 'Settings', icon: Settings, path: '/layout/settings' },
 ];
 
 export default function Layout() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const routerState = useRouterState();
+  const { clear, identity } = useInternetIdentity();
   const queryClient = useQueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [otherServicesOpen, setOtherServicesOpen] = useState(false);
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [requestedApproval, setRequestedApproval] = useState(false);
+  const currentPath = routerState.location.pathname;
 
-  const { data: callerRole, isLoading: roleLoading } = useGetCallerRole();
-  const { data: isApproved, isLoading: approvalLoading } = useIsCallerApproved();
-  const { mutate: requestApproval, isPending: requestingApproval } = useRequestApproval();
+  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
 
-  const isSuperAdmin = isSuperAdminEmail();
-  const isAdmin = isSuperAdmin || callerRole === UserRole.admin;
-  const isCheckingAccess = roleLoading || approvalLoading;
+  const loggedInEmail = localStorage.getItem('vcrm_logged_in_email') || '';
+  const isSuperAdminEmail = loggedInEmail === SUPER_ADMIN_EMAIL;
+  const isAuthenticated = !!identity;
 
-  // Access is granted if: super admin email, or admin role, or approved
-  const hasAccess = isSuperAdmin || callerRole === UserRole.admin || isApproved === true;
-  const isAccessPending = !isCheckingAccess && !hasAccess;
+  const showProfileSetup =
+    isAuthenticated &&
+    !profileLoading &&
+    isFetched &&
+    !isSuperAdminEmail &&
+    (userProfile === null || (userProfile && !userProfile.name));
 
-  useEffect(() => {
-    const authenticated = isOTPAuthenticated();
-    if (!authenticated) {
-      navigate({ to: '/login' });
-      return;
-    }
-    setIsAuthenticated(true);
-  }, [navigate]);
-
-  useEffect(() => {
-    if (isAuthenticated && location.pathname === '/') {
-      navigate({ to: '/dashboard' });
-    }
-  }, [isAuthenticated, location.pathname, navigate]);
-
-  const handleSignOut = () => {
-    clearOTPAuthenticated();
-    localStorage.removeItem('vcrm_logged_in_email');
+  const handleSignOut = async () => {
+    await clear();
     queryClient.clear();
+    localStorage.removeItem('vcrm_otp_authenticated');
+    localStorage.removeItem('vcrm_logged_in_email');
     navigate({ to: '/login' });
   };
 
-  const handleRequestApproval = () => {
-    requestApproval(undefined, {
-      onSuccess: () => {
-        setRequestedApproval(true);
-        toast.success('Approval request submitted successfully!');
-      },
-      onError: () => {
-        toast.error('Failed to submit approval request. Please try again.');
-      },
-    });
-  };
+  const isActive = (path: string) => currentPath.startsWith(path);
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  return (
-    <div className="flex h-screen bg-background">
-      <ProfileSetupModal />
-
-      {/* Sidebar */}
-      <aside className="w-[145px] bg-sidebar flex flex-col flex-shrink-0">
-        {/* Logo */}
-        <div className="p-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <img src="/assets/generated/vcrm-logo.dim_512x512.png" alt="VCRM" className="w-8 h-8 rounded" />
-            <div>
-              <div className="text-sidebar-foreground font-bold text-sm">VCRM</div>
-              <div className="text-sidebar-foreground/60 text-xs">Solar CRM</div>
-            </div>
-          </div>
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
+        <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 flex items-center justify-center flex-shrink-0">
+          <img src="/assets/generated/vcrm-logo.dim_512x512.png" alt="Logo" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         </div>
+        <span className="text-white font-bold text-sm tracking-wide truncate">NIRMALA SOL...</span>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+      {/* Main Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        {navItems.map((item) => {
+          if (item.children) {
+            const active = item.children.some(c => isActive(c.path)) || isActive(item.path);
             return (
-              <button
-                key={item.path}
-                onClick={() => navigate({ to: item.path })}
-                className={`w-full flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs transition-colors ${
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-center leading-tight">{item.label}</span>
-              </button>
+              <div key={item.label}>
+                <button
+                  onClick={() => setOtherServicesOpen(!otherServicesOpen)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    active
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5 flex-shrink-0 text-white" />
+                  <span className="flex-1 text-left text-white">{item.label}</span>
+                  {otherServicesOpen ? (
+                    <ChevronDown className="w-4 h-4 text-white/70" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-white/70" />
+                  )}
+                </button>
+                {otherServicesOpen && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.path}
+                        to={child.path}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`block px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                          isActive(child.path)
+                            ? 'bg-white/20 text-white font-medium'
+                            : 'text-white/70 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
-          })}
+          }
 
-          {/* Admin Panel link - only for admins */}
-          {isAdmin && (
-            <button
-              onClick={() => navigate({ to: '/admin' })}
-              className={`w-full flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs transition-colors ${
-                location.pathname === '/admin'
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                active
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Shield className="w-4 h-4" />
-              <span className="text-center leading-tight">Admin</span>
-            </button>
-          )}
-        </nav>
+              <item.icon className="w-5 h-5 flex-shrink-0 text-white" />
+              <span className="text-white">{item.label}</span>
+              {active && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
+            </Link>
+          );
+        })}
+      </nav>
 
-        {/* Bottom actions */}
-        <div className="p-2 border-t border-sidebar-border space-y-1">
-          <button
-            onClick={() => navigate({ to: '/profile' })}
-            className={`w-full flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs transition-colors ${
-              location.pathname === '/profile'
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Profile</span>
-          </button>
-          <button
-            onClick={handleSignOut}
-            className="w-full flex flex-col items-center gap-1 px-2 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
+      {/* Bottom Nav */}
+      <div className="px-3 py-3 border-t border-white/10 space-y-1">
+        {bottomNavItems.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                active
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/80 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0 text-white" />
+              <span className="text-white">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all duration-150"
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0 text-white" />
+          <span className="text-white">Sign Out</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-60 flex-shrink-0" style={{ backgroundColor: '#4B0082' }}>
+        <SidebarContent />
       </aside>
 
-      {/* Main content */}
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-60 flex flex-col" style={{ backgroundColor: '#4B0082' }}>
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-14 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
-          <div className="text-sm text-muted-foreground">
-            {navItems.find((n) => location.pathname.startsWith(n.path))?.label ||
-              (location.pathname === '/admin' ? 'Admin Panel' : 'Profile')}
-          </div>
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <Badge variant="outline" className="text-xs border-primary text-primary">
-                Admin
-              </Badge>
-            )}
-            {!isCheckingAccess && !hasAccess && (
-              <Badge variant="outline" className="text-xs border-amber-500 text-amber-500">
-                Access Pending Approval
-              </Badge>
-            )}
-          </div>
+        {/* Mobile Header */}
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <span className="font-semibold text-foreground">NIRMALA SOL...</span>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto">
-          {isCheckingAccess ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : isAccessPending ? (
-            <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
-              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center">
-                <Clock className="w-10 h-10 text-amber-500" />
-              </div>
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-foreground mb-2">Access Pending</h2>
-                <p className="text-muted-foreground max-w-md">
-                  Your account is pending approval by an administrator.
-                  You'll be notified once access is granted.
-                </p>
-              </div>
-              {!requestedApproval ? (
-                <Button
-                  onClick={handleRequestApproval}
-                  disabled={requestingApproval}
-                  variant="outline"
-                  className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                >
-                  {requestingApproval ? 'Requesting...' : 'Request Approval'}
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <UserCheck className="w-4 h-4" />
-                  <span>Approval request submitted. Please wait for admin review.</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Outlet />
-          )}
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
         </main>
       </div>
+
+      {/* Profile Setup Modal */}
+      {showProfileSetup && <ProfileSetupModal />}
     </div>
   );
 }

@@ -1,30 +1,55 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project involves a web app with Gmail OTP login, user approval flow, and an Admin Panel. vcrm.com@gmail.com is hardcoded as Super Admin who bypasses approval and can approve/reject other users from a dedicated Admin Panel.",
+  "summary": "CRM app (NIRMALA SOL) with purple sidebar. Building full CRM with real backend data storage (Motoko canister), working buttons, dashboard/pipeline showing only actual entered data (starting at 0), auto-update on data entry, visible sidebar text, and Refer & Earn section removed.",
   "architectural_notes": [
-    "Gmail OTP used for login/authentication",
-    "User approval flow: new users land on 'Access Pending Approval' screen until approved by Admin",
-    "vcrm.com@gmail.com is hardcoded Super Admin — always auto-approved, no pending screen"
+    "Backend: Motoko canister on Internet Computer for permanent data storage",
+    "Sidebar sections: Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out (no Refer & Earn)"
   ],
   "known_issues": [
-    "Admin account (vcrm.com@gmail.com) was stuck on 'Access Pending Approval' screen instead of going to Dashboard"
+    "Sidebar text not visible (dark text on purple background)",
+    "All buttons non-functional",
+    "Dashboard and Pipeline show fake/sample data instead of real entered data"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-auth-guard-in-frontend-src-components-layout-tsx-so-that-when-the-logged-in-user-s-email-is-vcrm-com-gmail-com-or-their-role-is-admin-owner-they-are-redirected-directly-to-the-dashboard-and-never-shown-the-access-pending-approval-screen",
-      "title": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
+      "id": "feature-fix-sidebar-text-and-icon-visibility-all-navigation-labels-dashboard-contacts-pipeline-templates-reports-other-services-admin-settings-sign-out-must-render-in-white-or-light-colored-text-icons-so-they-are-clearly-readable-against-the-purple-sidebar-background",
+      "title": "Fix sidebar text and icon visibility: all navigation labels (Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out) must render in white or light-colored text/icons so they are clearly readable against the purple sidebar background.",
       "reqIds": [
-        "REQ-3"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-build-a-fully-functional-admin-panel-page-at-frontend-src-pages-adminpage-tsx-this-page-must-display-a-list-of-all-pending-users-name-email-registration-date-provide-approve-and-reject-buttons-per-user-show-approved-and-rejected-users-in-separate-tabs-or-sections-and-be-accessible-only-to-the-super-admin-admin-role-users-add-a-navigation-link-to-this-panel-in-the-sidebar-layout-tsx-visible-only-to-admins",
-      "title": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+      "id": "feature-remove-the-refer-earn-menu-item-completely-from-the-sidebar-navigation",
+      "title": "Remove the 'Refer & Earn' menu item completely from the sidebar navigation.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-dashboard-must-display-only-real-data-fetched-from-the-backend-all-metrics-lead-count-deal-count-pipeline-stats-etc-must-start-at-0-when-no-data-has-been-entered-and-automatically-update-as-data-is-added",
+      "title": "Dashboard must display only real data fetched from the backend. All metrics (lead count, deal count, pipeline stats, etc.) must start at 0 when no data has been entered and automatically update as data is added.",
       "reqIds": [
         "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-pipeline-page-must-display-only-deals-that-have-been-actually-added-by-the-user-fetched-from-the-backend-it-must-start-empty-and-update-automatically-when-new-deals-are-added",
+      "title": "Pipeline page must display only deals that have been actually added by the user, fetched from the backend. It must start empty and update automatically when new deals are added.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-all-action-buttons-fully-functional-add-contact-add-lead-add-deal-and-any-other-create-edit-delete-buttons-must-open-their-respective-forms-submit-data-to-the-backend-and-reflect-changes-in-the-ui",
+      "title": "Make all action buttons fully functional: 'Add Contact', 'Add Lead', 'Add Deal', and any other create/edit/delete buttons must open their respective forms, submit data to the backend, and reflect changes in the UI.",
+      "reqIds": [
+        "REQ-6"
       ],
       "version": 1
     }
@@ -32,35 +57,51 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Hardcode vcrm.com@gmail.com as Super Admin who bypasses 'Access Pending Approval' screen and goes directly to Dashboard",
+      "summary": "Sidebar text visibility fix - white/light text on purple background",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Admin Panel where Super Admin can view pending users and approve or reject them; approved users get Dashboard access, rejected users are blocked",
+      "summary": "Real backend data storage using Motoko canister - permanently save all CRM data",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
-      "reqIds": [
-        "REQ-1"
-      ],
+      "summary": "Dashboard shows only actual entered data, starting at 0, auto-updates when data is added",
+      "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-4",
-      "summary": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
+      "summary": "Pipeline shows only added deals, auto-updates when deals are added",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "All buttons (Add Contact, Add Deal, etc.) must be fully functional",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Remove Refer & Earn section from sidebar",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Implement persistent backend storage in the Motoko canister for all core CRM entities: leads/contacts, deals, and pipeline stages. All CRUD operations (create, read, update, delete) must persist data across sessions.",
       "reqIds": [
-        "REQ-2"
+        "REQ-3"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "VCRM Solar CRM",
+  "projectName": "Nirmala Sol CRM",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

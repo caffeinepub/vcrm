@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,8 +46,8 @@ function categorizeError(err: unknown): CategorizedError {
   ) {
     return {
       category: 'auth',
-      title: 'Authentication required',
-      message: 'Your session may have expired. Please log out and sign in again to continue.',
+      title: 'Session error',
+      message: 'Your session could not be verified. Please sign out and sign in again to continue.',
     };
   }
 
@@ -139,8 +139,11 @@ function ErrorIcon({ category }: { category: ErrorCategory }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProfileSetupModal() {
+  // Pre-fill email from localStorage (set during OTP login)
+  const loggedInEmail = localStorage.getItem('vcrm_logged_in_email') ?? '';
+
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(loggedInEmail);
   const [phone, setPhone] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -149,8 +152,14 @@ export default function ProfileSetupModal() {
   const { actor, isFetching: actorFetching } = useActor();
 
   // Actor is ready when it exists and is not currently fetching.
-  // We do NOT require an Internet Identity here — OTP auth uses the anonymous actor.
   const isActorReady = !!actor && !actorFetching;
+
+  // Keep email in sync if localStorage changes (e.g. after login)
+  useEffect(() => {
+    if (loggedInEmail && !email) {
+      setEmail(loggedInEmail);
+    }
+  }, [loggedInEmail]);
 
   const handleBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));

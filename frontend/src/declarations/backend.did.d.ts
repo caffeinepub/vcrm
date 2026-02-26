@@ -16,16 +16,6 @@ export type ApprovalStatus = { 'pending' : null } |
 export type CreateUserStatus = { 'created' : null } |
   { 'createdFirstAdmin' : null } |
   { 'alreadyExists' : null };
-export interface Customer {
-  'id' : bigint,
-  'latitude' : number,
-  'name' : string,
-  'email' : string,
-  'longitude' : number,
-  'address' : string,
-  'phone' : string,
-  'reminderIds' : Array<bigint>,
-}
 export interface Deal {
   'id' : bigint,
   'title' : string,
@@ -53,29 +43,6 @@ export type LeadStatus = { 'new' : null } |
 export type OTPVerificationResult = { 'expired' : null } |
   { 'invalid' : null } |
   { 'success' : CreateUserStatus };
-export type ProjectStatus = { 'pending' : null } |
-  { 'completed' : null } |
-  { 'inProgress' : null } |
-  { 'onHold' : null };
-export interface Reminder {
-  'id' : bigint,
-  'note' : string,
-  'dueDate' : Time,
-  'isOverdue' : boolean,
-}
-export interface SiteSurvey {
-  'date' : Time,
-  'notes' : string,
-  'surveyorName' : string,
-}
-export interface SolarProject {
-  'id' : bigint,
-  'siteSurvey' : SiteSurvey,
-  'installationStatus' : ProjectStatus,
-  'systemSizeKW' : number,
-  'customerId' : bigint,
-}
-export type Time = bigint;
 export interface UserApprovalInfo {
   'status' : ApprovalStatus,
   'principal' : Principal,
@@ -84,86 +51,41 @@ export interface UserProfile {
   'name' : string,
   'email' : string,
   'phone' : string,
+  'profileComplete' : boolean,
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addCustomer' : ActorMethod<
-    [string, string, string, string, number, number],
-    Customer
-  >,
   'addDeal' : ActorMethod<[string, number, bigint, DealStage], Deal>,
   'addLead' : ActorMethod<[string, string, LeadStatus, string], Lead>,
-  'addReminder' : ActorMethod<[Time, string], Reminder>,
-  'addSolarProject' : ActorMethod<
-    [bigint, number, ProjectStatus, string, string, Time],
-    SolarProject
-  >,
-  'approveUser' : ActorMethod<[Principal], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteCustomer' : ActorMethod<[bigint], undefined>,
   'deleteDeal' : ActorMethod<[bigint], undefined>,
   'deleteLead' : ActorMethod<[bigint], undefined>,
-  'deleteReminder' : ActorMethod<[bigint], undefined>,
-  'deleteSolarProject' : ActorMethod<[bigint], undefined>,
   'generateOTP' : ActorMethod<[string], string>,
-  'getAllCustomers' : ActorMethod<[], Array<Customer>>,
   'getAllDeals' : ActorMethod<[], Array<Deal>>,
   'getAllLeads' : ActorMethod<[], Array<Lead>>,
-  'getAllReminders' : ActorMethod<[], Array<Reminder>>,
-  'getAllSolarProjects' : ActorMethod<[], Array<SolarProject>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCustomer' : ActorMethod<[bigint], [] | [Customer]>,
-  'getCustomerProjects' : ActorMethod<[bigint], Array<SolarProject>>,
-  'getDashboardStats' : ActorMethod<
-    [],
-    {
-      'totalLeads' : bigint,
-      'totalRevenue' : number,
-      'totalCustomers' : bigint,
-      'totalDeals' : bigint,
-    }
-  >,
   'getDeal' : ActorMethod<[bigint], [] | [Deal]>,
   'getDealsByStage' : ActorMethod<[DealStage], Array<Deal>>,
-  'getFilteredReminders' : ActorMethod<[boolean], Array<Reminder>>,
   'getLead' : ActorMethod<[bigint], [] | [Lead]>,
-  'getOverdueReminders' : ActorMethod<[], Array<Reminder>>,
-  'getPendingApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
-  'getProjectCountByStatus' : ActorMethod<[], [bigint, bigint, bigint, bigint]>,
-  'getSolarProject' : ActorMethod<[bigint], [] | [SolarProject]>,
-  'getSuperAdminPrincipal' : ActorMethod<[], [] | [Principal]>,
-  'getUpcomingReminders' : ActorMethod<[Time], Array<Reminder>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
-  'markReminderOverdue' : ActorMethod<[bigint], undefined>,
   'moveDealStage' : ActorMethod<[bigint, DealStage], Deal>,
-  'rejectUser' : ActorMethod<[Principal], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<
     [string, string, string],
     { 'ok' : null }
   >,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
-  'updateCustomer' : ActorMethod<
-    [bigint, string, string, string, string, number, number],
-    Customer
-  >,
   'updateDeal' : ActorMethod<[bigint, string, number, bigint, DealStage], Deal>,
   'updateLead' : ActorMethod<
     [bigint, string, string, LeadStatus, string],
     Lead
-  >,
-  'updateProjectStatus' : ActorMethod<[bigint, ProjectStatus], SolarProject>,
-  'updateReminder' : ActorMethod<[bigint, Time, string], Reminder>,
-  'updateSolarProject' : ActorMethod<
-    [bigint, number, ProjectStatus, string, string, Time],
-    SolarProject
   >,
   'verifyOTP' : ActorMethod<[string, string], OTPVerificationResult>,
 }

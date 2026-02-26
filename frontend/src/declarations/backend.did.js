@@ -8,16 +8,6 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const Customer = IDL.Record({
-  'id' : IDL.Nat,
-  'latitude' : IDL.Float64,
-  'name' : IDL.Text,
-  'email' : IDL.Text,
-  'longitude' : IDL.Float64,
-  'address' : IDL.Text,
-  'phone' : IDL.Text,
-  'reminderIds' : IDL.Vec(IDL.Nat),
-});
 export const DealStage = IDL.Variant({
   'new' : IDL.Null,
   'won' : IDL.Null,
@@ -46,31 +36,6 @@ export const Lead = IDL.Record({
   'notes' : IDL.Text,
   'reminderIds' : IDL.Vec(IDL.Nat),
 });
-export const Time = IDL.Int;
-export const Reminder = IDL.Record({
-  'id' : IDL.Nat,
-  'note' : IDL.Text,
-  'dueDate' : Time,
-  'isOverdue' : IDL.Bool,
-});
-export const ProjectStatus = IDL.Variant({
-  'pending' : IDL.Null,
-  'completed' : IDL.Null,
-  'inProgress' : IDL.Null,
-  'onHold' : IDL.Null,
-});
-export const SiteSurvey = IDL.Record({
-  'date' : Time,
-  'notes' : IDL.Text,
-  'surveyorName' : IDL.Text,
-});
-export const SolarProject = IDL.Record({
-  'id' : IDL.Nat,
-  'siteSurvey' : SiteSurvey,
-  'installationStatus' : ProjectStatus,
-  'systemSizeKW' : IDL.Float64,
-  'customerId' : IDL.Nat,
-});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -80,6 +45,7 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
   'phone' : IDL.Text,
+  'profileComplete' : IDL.Bool,
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -103,66 +69,19 @@ export const OTPVerificationResult = IDL.Variant({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addCustomer' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Float64],
-      [Customer],
-      [],
-    ),
   'addDeal' : IDL.Func([IDL.Text, IDL.Float64, IDL.Nat, DealStage], [Deal], []),
   'addLead' : IDL.Func([IDL.Text, IDL.Text, LeadStatus, IDL.Text], [Lead], []),
-  'addReminder' : IDL.Func([Time, IDL.Text], [Reminder], []),
-  'addSolarProject' : IDL.Func(
-      [IDL.Nat, IDL.Float64, ProjectStatus, IDL.Text, IDL.Text, Time],
-      [SolarProject],
-      [],
-    ),
-  'approveUser' : IDL.Func([IDL.Principal], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
   'deleteDeal' : IDL.Func([IDL.Nat], [], []),
   'deleteLead' : IDL.Func([IDL.Nat], [], []),
-  'deleteReminder' : IDL.Func([IDL.Nat], [], []),
-  'deleteSolarProject' : IDL.Func([IDL.Nat], [], []),
   'generateOTP' : IDL.Func([IDL.Text], [IDL.Text], []),
-  'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
   'getAllDeals' : IDL.Func([], [IDL.Vec(Deal)], ['query']),
   'getAllLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
-  'getAllReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
-  'getAllSolarProjects' : IDL.Func([], [IDL.Vec(SolarProject)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
-  'getCustomerProjects' : IDL.Func(
-      [IDL.Nat],
-      [IDL.Vec(SolarProject)],
-      ['query'],
-    ),
-  'getDashboardStats' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'totalLeads' : IDL.Nat,
-          'totalRevenue' : IDL.Float64,
-          'totalCustomers' : IDL.Nat,
-          'totalDeals' : IDL.Nat,
-        }),
-      ],
-      ['query'],
-    ),
   'getDeal' : IDL.Func([IDL.Nat], [IDL.Opt(Deal)], ['query']),
   'getDealsByStage' : IDL.Func([DealStage], [IDL.Vec(Deal)], ['query']),
-  'getFilteredReminders' : IDL.Func([IDL.Bool], [IDL.Vec(Reminder)], ['query']),
   'getLead' : IDL.Func([IDL.Nat], [IDL.Opt(Lead)], ['query']),
-  'getOverdueReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
-  'getPendingApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-  'getProjectCountByStatus' : IDL.Func(
-      [],
-      [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat],
-      ['query'],
-    ),
-  'getSolarProject' : IDL.Func([IDL.Nat], [IDL.Opt(SolarProject)], ['query']),
-  'getSuperAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
-  'getUpcomingReminders' : IDL.Func([Time], [IDL.Vec(Reminder)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
@@ -171,9 +90,7 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-  'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
   'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
-  'rejectUser' : IDL.Func([IDL.Principal], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
@@ -181,19 +98,6 @@ export const idlService = IDL.Service({
       [],
     ),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
-  'updateCustomer' : IDL.Func(
-      [
-        IDL.Nat,
-        IDL.Text,
-        IDL.Text,
-        IDL.Text,
-        IDL.Text,
-        IDL.Float64,
-        IDL.Float64,
-      ],
-      [Customer],
-      [],
-    ),
   'updateDeal' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Float64, IDL.Nat, DealStage],
       [Deal],
@@ -204,33 +108,12 @@ export const idlService = IDL.Service({
       [Lead],
       [],
     ),
-  'updateProjectStatus' : IDL.Func(
-      [IDL.Nat, ProjectStatus],
-      [SolarProject],
-      [],
-    ),
-  'updateReminder' : IDL.Func([IDL.Nat, Time, IDL.Text], [Reminder], []),
-  'updateSolarProject' : IDL.Func(
-      [IDL.Nat, IDL.Float64, ProjectStatus, IDL.Text, IDL.Text, Time],
-      [SolarProject],
-      [],
-    ),
   'verifyOTP' : IDL.Func([IDL.Text, IDL.Text], [OTPVerificationResult], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const Customer = IDL.Record({
-    'id' : IDL.Nat,
-    'latitude' : IDL.Float64,
-    'name' : IDL.Text,
-    'email' : IDL.Text,
-    'longitude' : IDL.Float64,
-    'address' : IDL.Text,
-    'phone' : IDL.Text,
-    'reminderIds' : IDL.Vec(IDL.Nat),
-  });
   const DealStage = IDL.Variant({
     'new' : IDL.Null,
     'won' : IDL.Null,
@@ -259,31 +142,6 @@ export const idlFactory = ({ IDL }) => {
     'notes' : IDL.Text,
     'reminderIds' : IDL.Vec(IDL.Nat),
   });
-  const Time = IDL.Int;
-  const Reminder = IDL.Record({
-    'id' : IDL.Nat,
-    'note' : IDL.Text,
-    'dueDate' : Time,
-    'isOverdue' : IDL.Bool,
-  });
-  const ProjectStatus = IDL.Variant({
-    'pending' : IDL.Null,
-    'completed' : IDL.Null,
-    'inProgress' : IDL.Null,
-    'onHold' : IDL.Null,
-  });
-  const SiteSurvey = IDL.Record({
-    'date' : Time,
-    'notes' : IDL.Text,
-    'surveyorName' : IDL.Text,
-  });
-  const SolarProject = IDL.Record({
-    'id' : IDL.Nat,
-    'siteSurvey' : SiteSurvey,
-    'installationStatus' : ProjectStatus,
-    'systemSizeKW' : IDL.Float64,
-    'customerId' : IDL.Nat,
-  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -293,6 +151,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'email' : IDL.Text,
     'phone' : IDL.Text,
+    'profileComplete' : IDL.Bool,
   });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -316,11 +175,6 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addCustomer' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Float64],
-        [Customer],
-        [],
-      ),
     'addDeal' : IDL.Func(
         [IDL.Text, IDL.Float64, IDL.Nat, DealStage],
         [Deal],
@@ -331,71 +185,17 @@ export const idlFactory = ({ IDL }) => {
         [Lead],
         [],
       ),
-    'addReminder' : IDL.Func([Time, IDL.Text], [Reminder], []),
-    'addSolarProject' : IDL.Func(
-        [IDL.Nat, IDL.Float64, ProjectStatus, IDL.Text, IDL.Text, Time],
-        [SolarProject],
-        [],
-      ),
-    'approveUser' : IDL.Func([IDL.Principal], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
     'deleteDeal' : IDL.Func([IDL.Nat], [], []),
     'deleteLead' : IDL.Func([IDL.Nat], [], []),
-    'deleteReminder' : IDL.Func([IDL.Nat], [], []),
-    'deleteSolarProject' : IDL.Func([IDL.Nat], [], []),
     'generateOTP' : IDL.Func([IDL.Text], [IDL.Text], []),
-    'getAllCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
     'getAllDeals' : IDL.Func([], [IDL.Vec(Deal)], ['query']),
     'getAllLeads' : IDL.Func([], [IDL.Vec(Lead)], ['query']),
-    'getAllReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
-    'getAllSolarProjects' : IDL.Func([], [IDL.Vec(SolarProject)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
-    'getCustomerProjects' : IDL.Func(
-        [IDL.Nat],
-        [IDL.Vec(SolarProject)],
-        ['query'],
-      ),
-    'getDashboardStats' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'totalLeads' : IDL.Nat,
-            'totalRevenue' : IDL.Float64,
-            'totalCustomers' : IDL.Nat,
-            'totalDeals' : IDL.Nat,
-          }),
-        ],
-        ['query'],
-      ),
     'getDeal' : IDL.Func([IDL.Nat], [IDL.Opt(Deal)], ['query']),
     'getDealsByStage' : IDL.Func([DealStage], [IDL.Vec(Deal)], ['query']),
-    'getFilteredReminders' : IDL.Func(
-        [IDL.Bool],
-        [IDL.Vec(Reminder)],
-        ['query'],
-      ),
     'getLead' : IDL.Func([IDL.Nat], [IDL.Opt(Lead)], ['query']),
-    'getOverdueReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
-    'getPendingApprovals' : IDL.Func(
-        [],
-        [IDL.Vec(UserApprovalInfo)],
-        ['query'],
-      ),
-    'getProjectCountByStatus' : IDL.Func(
-        [],
-        [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat],
-        ['query'],
-      ),
-    'getSolarProject' : IDL.Func([IDL.Nat], [IDL.Opt(SolarProject)], ['query']),
-    'getSuperAdminPrincipal' : IDL.Func(
-        [],
-        [IDL.Opt(IDL.Principal)],
-        ['query'],
-      ),
-    'getUpcomingReminders' : IDL.Func([Time], [IDL.Vec(Reminder)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
@@ -404,9 +204,7 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-    'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
     'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
-    'rejectUser' : IDL.Func([IDL.Principal], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
@@ -414,19 +212,6 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
-    'updateCustomer' : IDL.Func(
-        [
-          IDL.Nat,
-          IDL.Text,
-          IDL.Text,
-          IDL.Text,
-          IDL.Text,
-          IDL.Float64,
-          IDL.Float64,
-        ],
-        [Customer],
-        [],
-      ),
     'updateDeal' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Float64, IDL.Nat, DealStage],
         [Deal],
@@ -435,17 +220,6 @@ export const idlFactory = ({ IDL }) => {
     'updateLead' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, LeadStatus, IDL.Text],
         [Lead],
-        [],
-      ),
-    'updateProjectStatus' : IDL.Func(
-        [IDL.Nat, ProjectStatus],
-        [SolarProject],
-        [],
-      ),
-    'updateReminder' : IDL.Func([IDL.Nat, Time, IDL.Text], [Reminder], []),
-    'updateSolarProject' : IDL.Func(
-        [IDL.Nat, IDL.Float64, ProjectStatus, IDL.Text, IDL.Text, Time],
-        [SolarProject],
         [],
       ),
     'verifyOTP' : IDL.Func([IDL.Text, IDL.Text], [OTPVerificationResult], []),

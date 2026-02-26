@@ -1,104 +1,135 @@
 {
   "kind": "build_request",
-  "title": "Hardcode Super Admin and build Admin Panel for user approval",
-  "projectName": "VCRM Solar CRM",
+  "title": "Fix sidebar text visibility, real backend data, working buttons, remove Refer & Earn",
+  "projectName": "Nirmala SOL CRM",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
-      "target": "backend",
+      "text": "Fix sidebar text and icon visibility: all navigation labels (Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out) must render in white or light-colored text/icons so they are clearly readable against the purple sidebar background.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-3",
-          "msg-user-5"
+          "msg-screenshot",
+          "msg-text-visible"
         ],
         "quotes": [
-          "me Gmail Id :- vcrm.com@gmail.com ko Admin banana chahata hu",
-          "vcrm.com@gmail.com ko Super Admin hardcode kiya jayega"
+          "TEXT bijabal nahi hai",
+          "Sidebar text visible - White/light colored text jo purple background par clearly dikhe"
         ]
       },
       "acceptanceCriteria": [
-        "Logging in with vcrm.com@gmail.com never results in an 'Access Pending Approval' state",
-        "The backend returns an admin/owner role for vcrm.com@gmail.com without requiring any manual approval",
-        "Other users without approval are still correctly blocked by the pending approval flow"
+        "All sidebar menu item labels are white or light-colored and clearly legible against the purple background",
+        "Icons beside each menu item are also light-colored and visible",
+        "Active/selected menu item has a visually distinct highlight that remains readable"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
-      "target": "backend",
+      "text": "Remove the 'Refer & Earn' menu item completely from the sidebar navigation.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-4",
-          "msg-user-5"
+          "msg-refer-earn-remove"
         ],
         "quotes": [
-          "Option C",
-          "Admin ek dedicated panel se pending users ki list dekh sake, Admin kisi bhi user ko Approve ya Reject kar sake"
+          "Refer & Earn remove kare"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes a function to fetch all pending users accessible only to admins",
-        "Backend exposes an approve function that changes a user's status to approved",
-        "Backend exposes a reject function that changes a user's status to rejected/blocked",
-        "Approved users can subsequently access the dashboard",
-        "Rejected users remain blocked from the dashboard"
+        "Sidebar does not contain a 'Refer & Earn' link or section",
+        "Remaining sidebar items are: Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
-      "target": "frontend",
+      "text": "Implement persistent backend storage in the Motoko canister for all core CRM entities: leads/contacts, deals, and pipeline stages. All CRUD operations (create, read, update, delete) must persist data across sessions.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-2",
-          "msg-user-5"
+          "msg-real-data"
         ],
         "quotes": [
-          "not solve my problem",
-          "vcrm.com@gmail.com login karte hi seedha Dashboard par jayegi"
+          "Data Storage - yeh data permanently save ho (backend mein store ho)"
         ]
       },
       "acceptanceCriteria": [
-        "After OTP login with vcrm.com@gmail.com, the user is immediately on the Dashboard page",
-        "The 'Access Pending Approval' screen is never displayed to the Super Admin user",
-        "Other non-approved users still see the 'Access Pending Approval' screen"
+        "Leads/contacts added by the user are stored in stable backend state and survive canister upgrades",
+        "Deals added by the user are stored in stable backend state",
+        "All data is retrievable via query calls and returns only user-entered records"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
-      "target": "frontend",
+      "text": "Dashboard must display only real data fetched from the backend. All metrics (lead count, deal count, pipeline stats, etc.) must start at 0 when no data has been entered and automatically update as data is added.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-user-4",
-          "msg-user-5"
+          "msg-real-data"
         ],
         "quotes": [
-          "Option C",
-          "Admin Panel banega jahan Admin sabhi pending users ki list dekh sakega, Admin kisi bhi user ko Approve ya Reject kar sakega"
+          "Dashboard mein sirf actual entered data dikhega (shuruat mein 0)",
+          "jaise-jaise data add ho waise-waise update ho"
         ]
       },
       "acceptanceCriteria": [
-        "Admin Panel page lists all pending users with name, email, and an Approve/Reject action per user",
-        "Clicking Approve changes the user's status and moves them out of the pending list",
-        "Clicking Reject blocks the user and removes them from the pending list",
-        "The page shows separate sections or tabs for Pending, Approved, and Rejected users",
-        "The Admin Panel link appears in the sidebar only for admin/owner role users",
-        "Non-admin users cannot navigate to or access the Admin Panel page"
+        "Dashboard shows 0 for all counters and charts on a fresh start with no data",
+        "After adding a lead or deal, the dashboard stats reflect the new totals without a full page reload",
+        "No hardcoded or sample/mock data is displayed on the dashboard"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Pipeline page must display only deals that have been actually added by the user, fetched from the backend. It must start empty and update automatically when new deals are added.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-real-data"
+        ],
+        "quotes": [
+          "Pipeline mein sirf added deals dikhengi",
+          "jaise-jaise data add ho waise-waise update ho"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Pipeline board is empty when no deals have been added",
+        "Deals appear in the correct stage column after being added",
+        "No hardcoded or sample deals are shown",
+        "Moving a deal between stages updates the backend and is reflected immediately"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Make all action buttons fully functional: 'Add Contact', 'Add Lead', 'Add Deal', and any other create/edit/delete buttons must open their respective forms, submit data to the backend, and reflect changes in the UI.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-buttons-not-working"
+        ],
+        "quotes": [
+          "ye sare button kam nahi kar raha hai",
+          "All Buttons Working - Add Contact, Add Deal, sabhi buttons properly kaam karenge"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking 'Add Contact' opens the contact/lead form dialog and successfully saves to the backend",
+        "Clicking 'Add Deal' opens the deal form dialog and successfully saves to the backend",
+        "Edit and delete buttons on leads, contacts, and deals all work correctly",
+        "Success/error toast notifications appear after form submissions",
+        "Lists and counters update immediately after any create/edit/delete action"
       ]
     }
   ],
   "constraints": [
-    "The Super Admin email vcrm.com@gmail.com must be hardcoded and always bypass the approval flow",
-    "Do not break the existing OTP login flow for non-admin users",
-    "All Motoko logic must remain in the single backend/main.mo actor"
+    "Do not modify files listed in frontend.immutablePaths",
+    "Keep all Motoko logic in backend/main.mo single actor",
+    "Sidebar navigation items must remain: Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out (no Refer & Earn)"
   ],
   "nonGoals": [
-    "Adding any other authentication method beyond existing Gmail OTP",
-    "Changing the visual design or color theme of the application",
-    "Adding role types other than Super Admin and regular user"
+    "Templates page full implementation (placeholder is acceptable)",
+    "Reports page full implementation (placeholder is acceptable)",
+    "Other Services page full implementation",
+    "Real-time WebSocket updates (React Query polling or manual refetch is sufficient)"
   ],
   "imageRequirements": {
     "required": [],

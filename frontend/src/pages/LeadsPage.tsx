@@ -3,7 +3,6 @@ import { useGetAllLeads, useDeleteLead } from '../hooks/useQueries';
 import { LeadStatus, type Lead } from '../backend';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Edit2, Trash2, UserCheck } from 'lucide-react';
@@ -33,12 +32,13 @@ export default function LeadsPage() {
   const deleteLead = useDeleteLead();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [editLead, setEditLead] = useState<Lead | null>(null);
+  const [editLead, setEditLead] = useState<Lead | undefined>(undefined);
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<bigint | null>(null);
 
   const filtered = (leads ?? []).filter(l => {
-    const matchSearch = l.name.toLowerCase().includes(search.toLowerCase()) ||
+    const matchSearch =
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
       l.contact.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || l.status === statusFilter;
     return matchSearch && matchStatus;
@@ -59,15 +59,14 @@ export default function LeadsPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Leads</h1>
+          <h1 className="text-2xl font-bold text-foreground">Leads</h1>
           <p className="text-muted-foreground text-sm mt-1">{leads?.length ?? 0} total leads</p>
         </div>
-        <Button onClick={() => { setEditLead(null); setShowForm(true); }}>
+        <Button onClick={() => { setEditLead(undefined); setShowForm(true); }}>
           <Plus size={16} className="mr-2" /> Add Lead
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -91,7 +90,6 @@ export default function LeadsPage() {
         </Select>
       </div>
 
-      {/* Leads Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -107,7 +105,7 @@ export default function LeadsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((lead) => (
-            <Card key={lead.id.toString()} className="shadow-card hover:shadow-card-hover transition-shadow">
+            <Card key={lead.id.toString()} className="hover:shadow-md transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -145,12 +143,16 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {showForm && (
-        <LeadFormDialog
-          lead={editLead}
-          onClose={() => { setShowForm(false); setEditLead(null); }}
-        />
-      )}
+      <LeadFormDialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowForm(false);
+            setEditLead(undefined);
+          }
+        }}
+        lead={editLead}
+      />
 
       <DeleteConfirmationDialog
         open={deleteId !== null}

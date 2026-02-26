@@ -1,211 +1,292 @@
-import { useGetDashboardStats, useGetAllLeads, useGetAllDeals, useGetAllSolarProjects } from '../hooks/useQueries';
+import { useMemo } from 'react';
+import { useGetAllLeads, useGetAllDeals } from '../hooks/useQueries';
+import { LeadStatus, DealStage } from '../backend';
+import {
+  Users,
+  GitBranch,
+  TrendingUp,
+  DollarSign,
+  Loader2,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, DollarSign, TrendingUp, Sun, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { DealStage, LeadStatus, ProjectStatus } from '../backend';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
-function StatCard({ title, value, icon: Icon, color, subtitle }: {
-  title: string; value: string | number; icon: React.ElementType; color: string; subtitle?: string;
-}) {
-  return (
-    <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground font-medium">{title}</p>
-            <p className="text-3xl font-display font-bold text-foreground mt-1">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-          </div>
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-            <Icon size={22} className="text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+const STAGE_COLORS: Record<string, string> = {
+  New: '#6366f1',
+  'In Progress': '#f59e0b',
+  Won: '#10b981',
+  Lost: '#ef4444',
+};
 
 const STATUS_COLORS: Record<string, string> = {
-  [ProjectStatus.pending]: '#94a3b8',
-  [ProjectStatus.inProgress]: '#3b82f6',
-  [ProjectStatus.completed]: '#22c55e',
-  [ProjectStatus.onHold]: '#f97316',
+  New: '#6366f1',
+  Contacted: '#3b82f6',
+  Qualified: '#10b981',
+  Converted: '#8b5cf6',
+  Lost: '#ef4444',
 };
 
 export default function DashboardPage() {
-  const { data: stats, isLoading: statsLoading } = useGetDashboardStats();
-  const { data: leads } = useGetAllLeads();
-  const { data: deals } = useGetAllDeals();
-  const { data: solarProjects } = useGetAllSolarProjects();
+  const { data: leads = [], isLoading: leadsLoading } = useGetAllLeads();
+  const { data: deals = [], isLoading: dealsLoading } = useGetAllDeals();
 
-  // Pipeline chart data
-  const pipelineData = [
+  const isLoading = leadsLoading || dealsLoading;
+
+  const stats = useMemo(() => {
+    const totalLeads = leads.length;
+    const totalDeals = deals.length;
+    const totalRevenue = deals
+      .filter((d) => d.stage === DealStage.won)
+      .reduce((sum, d) => sum + d.value, 0);
+    const wonDeals = deals.filter((d) => d.stage === DealStage.won).length;
+
+    return { totalLeads, totalDeals, totalRevenue, wonDeals };
+  }, [leads, deals]);
+
+  const dealsByStage = useMemo(() => {
+    const stageMap: Record<string, number> = {
+      New: 0,
+      'In Progress': 0,
+      Won: 0,
+      Lost: 0,
+    };
+    deals.forEach((d) => {
+      if (d.stage === DealStage.new_) stageMap['New']++;
+      else if (d.stage === DealStage.inProgress) stageMap['In Progress']++;
+      else if (d.stage === DealStage.won) stageMap['Won']++;
+      else if (d.stage === DealStage.lost) stageMap['Lost']++;
+    });
+    return Object.entries(stageMap).map(([name, count]) => ({ name, count }));
+  }, [deals]);
+
+  const leadsByStatus = useMemo(() => {
+    const statusMap: Record<string, number> = {
+      New: 0,
+      Contacted: 0,
+      Qualified: 0,
+      Converted: 0,
+      Lost: 0,
+    };
+    leads.forEach((l) => {
+      if (l.status === LeadStatus.new_) statusMap['New']++;
+      else if (l.status === LeadStatus.contacted) statusMap['Contacted']++;
+      else if (l.status === LeadStatus.qualified) statusMap['Qualified']++;
+      else if (l.status === LeadStatus.converted) statusMap['Converted']++;
+      else if (l.status === LeadStatus.lost) statusMap['Lost']++;
+    });
+    return Object.entries(statusMap)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value }));
+  }, [leads]);
+
+  const statCards = [
     {
-      name: 'New',
-      count: deals?.filter(d => d.stage === DealStage.new_).length ?? 0,
-      value: deals?.filter(d => d.stage === DealStage.new_).reduce((s, d) => s + d.value, 0) ?? 0,
+      title: 'Total Leads',
+      value: stats.totalLeads,
+      icon: Users,
+      color: 'text-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-950/30',
     },
     {
-      name: 'In Progress',
-      count: deals?.filter(d => d.stage === DealStage.inProgress).length ?? 0,
-      value: deals?.filter(d => d.stage === DealStage.inProgress).reduce((s, d) => s + d.value, 0) ?? 0,
+      title: 'Total Deals',
+      value: stats.totalDeals,
+      icon: GitBranch,
+      color: 'text-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
     },
     {
-      name: 'Won',
-      count: deals?.filter(d => d.stage === DealStage.won).length ?? 0,
-      value: deals?.filter(d => d.stage === DealStage.won).reduce((s, d) => s + d.value, 0) ?? 0,
+      title: 'Won Deals',
+      value: stats.wonDeals,
+      icon: TrendingUp,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     },
     {
-      name: 'Lost',
-      count: deals?.filter(d => d.stage === DealStage.lost).length ?? 0,
-      value: deals?.filter(d => d.stage === DealStage.lost).reduce((s, d) => s + d.value, 0) ?? 0,
+      title: 'Revenue (Won)',
+      value: `₹${stats.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      icon: DollarSign,
+      color: 'text-purple-500',
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
     },
   ];
 
-  // Solar project status pie data
-  const solarStatusData = [
-    { name: 'Pending', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.pending).length ?? 0, color: STATUS_COLORS[ProjectStatus.pending] },
-    { name: 'In Progress', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.inProgress).length ?? 0, color: STATUS_COLORS[ProjectStatus.inProgress] },
-    { name: 'Completed', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.completed).length ?? 0, color: STATUS_COLORS[ProjectStatus.completed] },
-    { name: 'On Hold', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.onHold).length ?? 0, color: STATUS_COLORS[ProjectStatus.onHold] },
-  ].filter(d => d.value > 0);
-
-  // Count new leads using the enum value
-  const newLeadsCount = leads?.filter(l => l.status === LeadStatus.new_).length ?? 0;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Overview of your CRM activity</p>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Overview of your CRM data
+        </p>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {statsLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="shadow-card">
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <>
-            <StatCard
-              title="Total Leads"
-              value={Number(stats?.totalLeads ?? 0)}
-              icon={UserCheck}
-              color="bg-blue-500"
-              subtitle={`${newLeadsCount} new this period`}
-            />
-            <StatCard
-              title="Total Customers"
-              value={Number(stats?.totalCustomers ?? 0)}
-              icon={Users}
-              color="bg-indigo-500"
-            />
-            <StatCard
-              title="Total Deals"
-              value={Number(stats?.totalDeals ?? 0)}
-              icon={TrendingUp}
-              color="bg-orange"
-              subtitle={`${deals?.filter(d => d.stage === DealStage.won).length ?? 0} won`}
-            />
-            <StatCard
-              title="Total Revenue"
-              value={`$${(stats?.totalRevenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-              icon={DollarSign}
-              color="bg-emerald-500"
-            />
-          </>
-        )}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Pipeline Chart */}
-        <Card className="lg:col-span-2 shadow-card">
-          <CardHeader>
-            <CardTitle className="font-display text-base">Deal Pipeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={pipelineData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(value: number, name: string) => [
-                    name === 'value' ? `$${value.toLocaleString()}` : value,
-                    name === 'value' ? 'Revenue' : 'Count',
-                  ]}
-                  contentStyle={{ borderRadius: '8px' }}
-                />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="count" />
-                <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]} name="value" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Solar Projects Status */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="font-display text-base">Solar Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {solarStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={solarStatusData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {solarStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px' }} />
-                  <Legend iconType="circle" iconSize={8} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-60 flex flex-col items-center justify-center text-muted-foreground">
-                <Sun size={32} className="mb-2 opacity-30" />
-                <p className="text-sm">No solar projects yet</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Solar Projects', value: solarProjects?.length ?? 0, icon: Sun, color: 'text-orange' },
-          { label: 'Completed', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.completed).length ?? 0, icon: CheckCircle, color: 'text-emerald-500' },
-          { label: 'In Progress', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.inProgress).length ?? 0, icon: Clock, color: 'text-blue-500' },
-          { label: 'On Hold', value: solarProjects?.filter(p => p.installationStatus === ProjectStatus.onHold).length ?? 0, icon: AlertCircle, color: 'text-orange' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="shadow-card">
-            <CardContent className="p-4 flex items-center gap-3">
-              <Icon size={20} className={color} />
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-xl font-display font-bold text-foreground">{value}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((card) => (
+          <Card key={card.title} className="border border-border">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{card.title}</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">
+                    {card.value}
+                  </p>
+                </div>
+                <div className={`p-3 rounded-xl ${card.bg}`}>
+                  <card.icon className={`w-6 h-6 ${card.color}`} />
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Deals by Stage Bar Chart */}
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Deals by Stage
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {deals.length === 0 ? (
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+                No deals yet. Add deals to see the chart.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dealsByStage} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {dealsByStage.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={STAGE_COLORS[entry.name] || '#6366f1'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Leads by Status Pie Chart */}
+        <Card className="border border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Leads by Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leads.length === 0 ? (
+              <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+                No leads yet. Add leads to see the chart.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={leadsByStatus}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {leadsByStatus.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={STATUS_COLORS[entry.name] || '#6366f1'}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Leads */}
+      <Card className="border border-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold">Recent Leads</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {leads.length === 0 ? (
+            <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
+              No leads yet. Go to Contacts to add your first lead.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">Name</th>
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">Contact</th>
+                    <th className="text-left py-2 px-3 text-muted-foreground font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leads.slice(0, 5).map((lead) => (
+                    <tr key={lead.id.toString()} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="py-2 px-3 font-medium text-foreground">{lead.name}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{lead.contact}</td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          lead.status === LeadStatus.converted
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                            : lead.status === LeadStatus.qualified
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
+                            : lead.status === LeadStatus.contacted
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'
+                            : lead.status === LeadStatus.lost
+                            ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400'
+                            : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400'
+                        }`}>
+                          {lead.status === LeadStatus.new_ ? 'New'
+                            : lead.status === LeadStatus.contacted ? 'Contacted'
+                            : lead.status === LeadStatus.qualified ? 'Qualified'
+                            : lead.status === LeadStatus.converted ? 'Converted'
+                            : 'Lost'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

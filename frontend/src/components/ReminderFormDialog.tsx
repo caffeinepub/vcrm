@@ -1,76 +1,59 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAddReminder, useUpdateReminder } from '../hooks/useQueries';
-import type { Reminder } from '../backend';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+
+// Local type since Reminder is no longer in the backend
+export interface ReminderLocal {
+  id: bigint;
+  dueDate: bigint;
+  note: string;
+  isOverdue: boolean;
+}
 
 interface ReminderFormDialogProps {
-  reminder?: Reminder | null;
+  reminder?: ReminderLocal | null;
   onClose: () => void;
 }
 
 export default function ReminderFormDialog({ reminder, onClose }: ReminderFormDialogProps) {
-  const addReminder = useAddReminder();
-  const updateReminder = useUpdateReminder();
   const isEdit = !!reminder;
 
-  // Convert bigint nanoseconds to datetime-local string
-  const toDatetimeLocal = (ns: bigint): string => {
+  const bigintToDatetimeLocal = (ns: bigint): string => {
     try {
       const ms = Number(ns) / 1_000_000;
-      return format(new Date(ms), "yyyy-MM-dd'T'HH:mm");
+      const d = new Date(ms);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     } catch {
       return '';
     }
   };
 
-  const [dueDate, setDueDate] = useState(
-    reminder ? toDatetimeLocal(reminder.dueDate) : ''
-  );
+  const [dueDate, setDueDate] = useState(reminder ? bigintToDatetimeLocal(reminder.dueDate) : '');
   const [note, setNote] = useState(reminder?.note ?? '');
 
   useEffect(() => {
     if (reminder) {
-      setDueDate(toDatetimeLocal(reminder.dueDate));
+      setDueDate(bigintToDatetimeLocal(reminder.dueDate));
       setNote(reminder.note);
     }
   }, [reminder]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dueDate) {
-      toast.error('Please select a due date');
-      return;
-    }
-    // Convert datetime-local to nanoseconds bigint
-    const ms = new Date(dueDate).getTime();
-    const ns = BigInt(ms) * BigInt(1_000_000);
-    try {
-      if (isEdit && reminder) {
-        await updateReminder.mutateAsync({ id: reminder.id, dueDate: ns, note });
-        toast.success('Reminder updated');
-      } else {
-        await addReminder.mutateAsync({ dueDate: ns, note });
-        toast.success('Reminder added');
-      }
-      onClose();
-    } catch {
-      toast.error(`Failed to ${isEdit ? 'update' : 'add'} reminder`);
-    }
+    toast.info('Reminders are not available in this version.');
+    onClose();
   };
-
-  const isPending = addReminder.isPending || updateReminder.isPending;
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display">{isEdit ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -87,7 +70,7 @@ export default function ReminderFormDialog({ reminder, onClose }: ReminderFormDi
             <Label htmlFor="reminder-note">Note *</Label>
             <Textarea
               id="reminder-note"
-              placeholder="What do you need to follow up on?"
+              placeholder="Reminder note..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
@@ -95,12 +78,8 @@ export default function ReminderFormDialog({ reminder, onClose }: ReminderFormDi
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending || !note.trim() || !dueDate}>
-              {isPending ? 'Saving...' : isEdit ? 'Update Reminder' : 'Add Reminder'}
-            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit">{isEdit ? 'Update' : 'Add'} Reminder</Button>
           </DialogFooter>
         </form>
       </DialogContent>

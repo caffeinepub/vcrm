@@ -1,14 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Hardcode a Super Admin user (`vcrm.com@gmail.com`) that bypasses the approval flow, and build an Admin Panel for managing user approvals.
+**Goal:** Fix sidebar text/icon visibility, remove "Refer & Earn", implement real persistent backend storage, replace all mock/hardcoded data with live backend data, and make all action buttons fully functional.
 
 **Planned changes:**
-- Hardcode `vcrm.com@gmail.com` as Super Admin in the backend so it is always treated as approved with admin/owner role
-- Add backend functions to list pending users, approve a user, and reject a user (admin-only access)
-- Fix the auth guard in `Layout.tsx` so that the Super Admin (by email or admin role) is never shown the "Access Pending Approval" screen and is redirected directly to the Dashboard
-- Build a new `AdminPage.tsx` with tabs/sections for Pending, Approved, and Rejected users, each showing name, email, and registration date with Approve/Reject actions
-- Add an Admin Panel navigation link in the sidebar visible only to admin/owner role users
-- Restrict access to the Admin Panel page so non-admin users cannot navigate to it
+- Fix sidebar so all navigation labels and icons render in white/light color, clearly readable against the purple background
+- Remove "Refer & Earn" menu item from the sidebar entirely
+- Implement persistent Motoko backend storage (stable variables) for contacts/leads, deals, and pipeline stages with full CRUD
+- Dashboard fetches and displays only real backend data; all counters start at 0 and update as data is added — no hardcoded/mock data
+- Pipeline board fetches only user-added deals from the backend; starts empty and updates when deals are added or moved between stages
+- Wire up all action buttons (Add Contact, Add Lead, Add Deal, Edit, Delete) to open forms, submit to backend, and immediately reflect changes in the UI with success/error notifications
 
-**User-visible outcome:** Logging in with `vcrm.com@gmail.com` immediately lands on the Dashboard. The Super Admin can open the Admin Panel from the sidebar, view all pending users, and approve or reject them. Approved users gain dashboard access; rejected users remain blocked.
+**User-visible outcome:** The sidebar is fully legible with white text and icons, "Refer & Earn" is gone, and the CRM is fully functional — users can add contacts, leads, and deals that persist across sessions, with the dashboard and pipeline updating in real time based on actual entered data.

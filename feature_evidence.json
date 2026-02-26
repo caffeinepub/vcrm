@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-auth-guard-in-frontend-src-components-layout-tsx-so-that-when-the-logged-in-user-s-email-is-vcrm-com-gmail-com-or-their-role-is-admin-owner-they-are-redirected-directly-to-the-dashboard-and-never-shown-the-access-pending-approval-screen",
-      "featureTitle": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
+      "featureId": "feature-fix-sidebar-text-and-icon-visibility-all-navigation-labels-dashboard-contacts-pipeline-templates-reports-other-services-admin-settings-sign-out-must-render-in-white-or-light-colored-text-icons-so-they-are-clearly-readable-against-the-purple-sidebar-background",
+      "featureTitle": "Fix sidebar text and icon visibility: all navigation labels (Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out) must render in white or light-colored text/icons so they are clearly readable against the purple sidebar background.",
       "files": [
         "frontend/src/components/Layout.tsx"
       ],
@@ -17,18 +17,35 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-build-a-fully-functional-admin-panel-page-at-frontend-src-pages-adminpage-tsx-this-page-must-display-a-list-of-all-pending-users-name-email-registration-date-provide-approve-and-reject-buttons-per-user-show-approved-and-rejected-users-in-separate-tabs-or-sections-and-be-accessible-only-to-the-super-admin-admin-role-users-add-a-navigation-link-to-this-panel-in-the-sidebar-layout-tsx-visible-only-to-admins",
-      "featureTitle": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+      "featureId": "feature-remove-the-refer-earn-menu-item-completely-from-the-sidebar-navigation",
+      "featureTitle": "Remove the 'Refer & Earn' menu item completely from the sidebar navigation.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/AdminPage.tsx"
+        "frontend/src/components/Layout.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-dashboard-must-display-only-real-data-fetched-from-the-backend-all-metrics-lead-count-deal-count-pipeline-stats-etc-must-start-at-0-when-no-data-has-been-entered-and-automatically-update-as-data-is-added",
+      "featureTitle": "Dashboard must display only real data fetched from the backend. All metrics (lead count, deal count, pipeline stats, etc.) must start at 0 when no data has been entered and automatically update as data is added.",
+      "files": [
+        "frontend/src/pages/DashboardPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -41,6 +58,52 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-pipeline-page-must-display-only-deals-that-have-been-actually-added-by-the-user-fetched-from-the-backend-it-must-start-empty-and-update-automatically-when-new-deals-are-added",
+      "featureTitle": "Pipeline page must display only deals that have been actually added by the user, fetched from the backend. It must start empty and update automatically when new deals are added.",
+      "files": [
+        "frontend/src/pages/DealsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-make-all-action-buttons-fully-functional-add-contact-add-lead-add-deal-and-any-other-create-edit-delete-buttons-must-open-their-respective-forms-submit-data-to-the-backend-and-reflect-changes-in-the-ui",
+      "featureTitle": "Make all action buttons fully functional: 'Add Contact', 'Add Lead', 'Add Deal', and any other create/edit/delete buttons must open their respective forms, submit data to the backend, and reflect changes in the UI.",
+      "files": [
+        "frontend/src/components/AddLeadModal.tsx",
+        "frontend/src/components/DealCard.tsx",
+        "frontend/src/components/DealFormDialog.tsx",
+        "frontend/src/components/LeadFormDialog.tsx",
+        "frontend/src/pages/ContactsPage.tsx",
+        "frontend/src/pages/DealsPage.tsx",
+        "frontend/src/pages/LeadsPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "user-approval@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }

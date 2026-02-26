@@ -1,32 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T15:47:51.529Z",
+  "generatedAt": "2026-02-26T17:54:05.704Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 2,
+    "total": 6,
+    "implemented": 5,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-2",
-        "summary": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
+        "summary": "Fix sidebar text and icon visibility: all navigation labels (Dashboard, Contacts, Pipeline, Templates, Reports, Other Services, Admin, Settings, Sign Out) must render in white or light-colored text/icons so they are clearly readable against the purple sidebar background.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/components/Layout.tsx"
@@ -36,41 +22,104 @@
         ]
       },
       {
-        "id": "REQ-4",
-        "summary": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+        "id": "REQ-2",
+        "summary": "Remove the 'Refer & Earn' menu item completely from the sidebar navigation.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/Layout.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminPage.tsx",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/App.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/Layout.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Implement persistent backend storage in the Motoko canister for all core CRM entities: leads/contacts, deals, and pipeline stages. All CRUD operations (create, read, update, delete) must persist data across sessions.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Dashboard must display only real data fetched from the backend. All metrics (lead count, deal count, pipeline stats, etc.) must start at 0 when no data has been entered and automatically update as data is added.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/DashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/DashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Pipeline page must display only deals that have been actually added by the user, fetched from the backend. It must start empty and update automatically when new deals are added.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/DealsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/DealsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Make all action buttons fully functional: 'Add Contact', 'Add Lead', 'Add Deal', and any other create/edit/delete buttons must open their respective forms, submit data to the backend, and reflect changes in the UI.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ContactsPage.tsx",
+          "frontend/src/pages/LeadsPage.tsx",
+          "frontend/src/pages/DealsPage.tsx",
+          "frontend/src/components/AddLeadModal.tsx",
+          "frontend/src/components/LeadFormDialog.tsx",
+          "frontend/src/components/DealFormDialog.tsx",
+          "frontend/src/components/DealCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ContactsPage.tsx",
+          "frontend/src/pages/LeadsPage.tsx",
+          "frontend/src/pages/DealsPage.tsx",
+          "frontend/src/components/AddLeadModal.tsx",
+          "frontend/src/components/LeadFormDialog.tsx",
+          "frontend/src/components/DealFormDialog.tsx",
+          "frontend/src/components/DealCard.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/AddLeadModal.tsx",
+    "frontend/src/components/CustomerFormDialog.tsx",
+    "frontend/src/components/DealCard.tsx",
+    "frontend/src/components/DealFormDialog.tsx",
+    "frontend/src/components/DeleteConfirmationDialog.tsx",
     "frontend/src/components/Layout.tsx",
+    "frontend/src/components/LeadFormDialog.tsx",
+    "frontend/src/components/ReminderFormDialog.tsx",
+    "frontend/src/components/SolarProjectFormDialog.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/pages/ContactsPage.tsx",
     "frontend/src/pages/CustomerDetailPage.tsx",
-    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/CustomersPage.tsx",
+    "frontend/src/pages/DashboardPage.tsx",
+    "frontend/src/pages/DealsPage.tsx",
+    "frontend/src/pages/FollowupDetailsPage.tsx",
+    "frontend/src/pages/LeadSummaryReportPage.tsx",
+    "frontend/src/pages/LeadsPage.tsx",
+    "frontend/src/pages/ProfilePage.tsx",
+    "frontend/src/pages/RemindersPage.tsx",
     "frontend/src/pages/SolarProjectDetailPage.tsx",
+    "frontend/src/pages/SolarProjectsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
