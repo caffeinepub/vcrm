@@ -1,62 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T18:34:58.002Z",
-  "summary": "The diff implements the majority of the OTP-based login system and profile page requirements. REQ-45, REQ-46, REQ-47, REQ-48, and REQ-49 are largely addressed. However, several specific acceptance criteria have gaps: useUpdateCallerUserProfile uses saveCallerUserProfile (not a distinct updateCallerUserProfile backend function), fresh actor references via refs are only partially applied in OTP/profile hooks, and the redirect to profile setup on incomplete profile is not implemented.",
+  "generatedAt": "2026-02-26T11:54:35.899Z",
+  "summary": "The diff addresses both REQ-1 (backend fix) and REQ-2 (frontend ProfileSetupModal fix). The frontend changes are clearly visible and well-implemented. The backend file is truncated, so full verification of REQ-1 is limited, but the file is modified. The ProfileSetupModal now uses a fresh actor reference, surfaces error messages inline, and the mutation hook (useSaveCallerUserProfile) validates identity and actor before calling the backend. Dashboard redirection after success is not explicitly visible in the truncated diff.",
   "missing_requirements": [
     {
-      "id": "REQ-47",
-      "requirement": "updateCallerUserProfile(name, email, phone) — a distinct backend function separate from saveCallerUserProfile — should be implemented and return #ok on success with appropriate #err variants.",
-      "reason": "The diff's useUpdateCallerUserProfile hook calls actor.saveCallerUserProfile rather than a distinct actor.updateCallerUserProfile function. There is no evidence of a separate updateCallerUserProfile function in backend/main.mo; the hook reuses the save path.",
+      "id": "REQ-2",
+      "requirement": "On success, dismiss the modal and proceed to the dashboard.",
+      "reason": "The ProfileSetupModal.tsx diff is truncated and does not show modal dismissal logic or navigation to the dashboard after a successful save. Only a toast.success call is visible; no modal close state change or router navigation to the dashboard is confirmed.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "requirement": "All hooks (useGenerateOTP, useVerifyOTP, useGetCallerUserProfile, useUpdateCallerUserProfile) use a freshly obtained actor reference at call time via refs, not a stale closure.",
-      "reason": "useGenerateOTP and useVerifyOTP capture actor from useActor() directly in the closure without using a ref pattern. Only useSaveCallerUserProfile uses the actorRef pattern. The requirement states all hooks must use a fresh actor reference at invocation time.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-46",
-      "requirement": "Successful OTP verification redirects to profile setup if the profile is incomplete.",
-      "reason": "The LoginPage.tsx shows both branches of the post-verification redirect navigate to '/dashboard' regardless of whether userProfile exists or not, so the 'redirect to Profile Setup if profile is incomplete' branch is not implemented.",
-      "evidence": [
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/components/ProfileSetupModal.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "A migration module (backend/migration.mo) was added to handle data upgrades from OldUserProfile to NewUserProfile with a phone field.",
-      "reason": "The build request does not mention any migration module or data upgrade strategy. This is extra infrastructure not requested.",
+      "description": "Actor readiness status indicator UI banners (Connecting to backend / Connected — ready to save your profile)",
+      "reason": "The build request does not mention adding visual actor readiness indicators or connection status banners to the ProfileSetupModal. The non-goals explicitly state the Profile Setup modal UI should not be redesigned, and adding connection status banners is an unrequested UI addition.",
       "evidence": [
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "description": "The sidebar footer user profile card is made clickable to navigate to /profile in addition to the sidebar nav link.",
-      "reason": "REQ-48 only requests a Profile link in the sidebar navigation. Making the profile card in the sidebar footer also a navigation target was not requested.",
-      "evidence": [
-        "frontend/src/components/Layout.tsx"
+        "frontend/src/components/ProfileSetupModal.tsx"
       ]
     }
   ],
   "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/Layout.tsx",
     "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/LoginPage.tsx",
-    "frontend/src/pages/ProfilePage.tsx",
     "project_state.json"
   ]
 }

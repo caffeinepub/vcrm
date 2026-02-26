@@ -104,6 +104,9 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum Variant_ok {
+    ok = "ok"
+}
 export interface backendInterface {
     addCustomer(name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
     addDeal(title: string, value: number, customerId: bigint, stage: DealStage): Promise<Deal>;
@@ -157,13 +160,7 @@ export interface backendInterface {
     markReminderOverdue(id: bigint): Promise<void>;
     moveDealStage(id: bigint, stage: DealStage): Promise<Deal>;
     requestApproval(): Promise<void>;
-    saveCallerUserProfile(name: string, email: string, phone: string): Promise<{
-        __kind__: "ok";
-        ok: null;
-    } | {
-        __kind__: "error";
-        error: string;
-    }>;
+    saveCallerUserProfile(name: string, email: string, phone: string): Promise<Variant_ok>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     updateCustomer(id: bigint, name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
     updateDeal(id: bigint, title: string, value: number, customerId: bigint, stage: DealStage): Promise<Deal>;

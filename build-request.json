@@ -1,129 +1,54 @@
 {
   "kind": "build_request",
-  "title": "OTP-Based Login System and Professional User Profile Page",
-  "projectName": "VCRM",
-  "priority": "normal",
+  "title": "Fix Profile Setup modal 'Unable to save profile' error",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-45",
-      "text": "In the Motoko backend (backend/main.mo), implement an OTP (One-Time Password) authentication system. Add functions to: (1) generateOTP(email: Text) — generate a 6-digit numeric OTP, store it against the email with a 10-minute expiry timestamp, and return the OTP (the frontend will display/simulate delivery since email sending is not supported); (2) verifyOTP(email: Text, otp: Text) — validate the OTP against the stored value and expiry, return a result indicating success or failure with a reason; (3) on successful OTP verification, look up or create a user profile keyed by the verified email, applying the existing first-user auto-admin logic. Remove or retain Internet Identity as a secondary option but OTP must be the primary login path.",
+      "id": "REQ-1",
+      "text": "Fix the backend `saveCallerUserProfile` function to correctly accept and store name, email, and phone fields. Ensure the Candid type signature matches what the frontend sends, and that the function returns a success result without throwing or returning an error variant.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
+          "Unable to save profile. Please try again."
         ]
       },
       "acceptanceCriteria": [
-        "generateOTP(email) stores a 6-digit OTP with a 10-minute expiry and returns the OTP value",
-        "verifyOTP(email, otp) returns #ok when the OTP matches and has not expired",
-        "verifyOTP returns #err with a reason string when OTP is wrong or expired",
-        "First user to verify OTP is automatically assigned Admin role and approved status",
-        "Subsequent users go through the existing approval flow after OTP verification",
-        "Expired OTPs are rejected and a new one must be requested"
+        "Calling saveCallerUserProfile with valid name, email, and phone values persists the profile in stable storage",
+        "The function returns a #ok result variant on success",
+        "No trap or error is thrown for valid inputs"
       ]
     },
     {
-      "id": "REQ-46",
-      "text": "Replace the existing Internet Identity login page (frontend/src/pages/LoginPage.tsx) with a professional OTP-based login UI. The page must have two steps: Step 1 — an email input field with a 'Send OTP' button; Step 2 — a 6-digit OTP input (individual digit boxes or a single input) with a 'Verify OTP' countdown timer (10 minutes), a 'Resend OTP' link, and a 'Verify' button. Display the generated OTP inline (simulated delivery) in a highlighted info banner since real email delivery is not available. On successful verification, store the session (email + verified status) and redirect to the dashboard or Profile Setup if the profile is incomplete. Apply the existing emerald green and dark teal brand theme consistently.",
+      "id": "REQ-2",
+      "text": "Fix the ProfileSetupModal component to correctly invoke the backend actor's `saveCallerUserProfile` function. Ensure the actor reference is fresh (not stale), argument types match the current Candid interface, and all error cases surface a meaningful message. On success, dismiss the modal and proceed to the dashboard.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
+          "Unable to save profile. Please try again."
         ]
       },
       "acceptanceCriteria": [
-        "Step 1 shows email input and 'Send OTP' button; invalid email format shows inline validation error",
-        "Step 2 shows OTP input, 10-minute countdown timer, 'Resend OTP' link, and 'Verify' button",
-        "Generated OTP is displayed in an info banner on the login page (simulated delivery)",
-        "Resend OTP resets the countdown and generates a new OTP",
-        "Successful OTP verification redirects to dashboard (or profile setup if profile incomplete)",
-        "Wrong or expired OTP shows a clear inline error message",
-        "Page matches the existing emerald green / dark teal brand theme and is fully responsive"
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "text": "In the Motoko backend (backend/main.mo), add or update user profile management functions to support a richer profile: (1) getCallerUserProfile — return the authenticated caller's profile including name, email, phone (optional), role, approvalStatus, and joinDate; (2) updateCallerUserProfile(name: Text, email: Text, phone: Text) — update the caller's profile fields and return a result. Ensure these functions are compatible with the OTP-based session (keyed by email principal or stored identity).",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
-        ]
-      },
-      "acceptanceCriteria": [
-        "getCallerUserProfile returns name, email, phone, role, approvalStatus, and joinDate for the authenticated caller",
-        "updateCallerUserProfile accepts name, email, and phone and persists changes, returning #ok on success",
-        "Phone field is optional and stored as Text",
-        "Functions return appropriate #err variants for unauthenticated or missing profile cases"
-      ]
-    },
-    {
-      "id": "REQ-48",
-      "text": "Create a new professional Profile page at frontend/src/pages/ProfilePage.tsx. The page must display the logged-in user's profile information (full name, email, phone, role, account status, and member since date) in a clean card-based layout. Include an inline edit form (or edit modal) allowing the user to update their name, email, and phone number. Show a non-editable section for role and account status. Add a 'Change Password / Re-verify' section with a button that triggers a new OTP to the registered email for re-authentication. Apply the emerald green / dark teal brand theme. Add a route '/profile' in App.tsx and a 'Profile' link in the sidebar navigation in Layout.tsx.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Profile page at /profile displays name, email, phone, role, account status, and member-since date",
-        "User can edit name, email, and phone via an inline form or edit modal; changes are saved to the backend",
-        "Role and account status fields are read-only and clearly labeled",
-        "'Re-verify via OTP' button triggers a new OTP flow for the registered email",
-        "Success and error toasts appear on save",
-        "Route /profile is registered in App.tsx",
-        "Sidebar navigation in Layout.tsx includes a 'Profile' link with an appropriate icon",
-        "Page is fully responsive and matches the emerald green / dark teal brand theme"
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "text": "In frontend/src/hooks/useQueries.ts, add React Query hooks for the new OTP and profile endpoints: useGenerateOTP(email), useVerifyOTP(email, otp), useGetCallerUserProfile, and useUpdateCallerUserProfile. Ensure these hooks use a freshly obtained actor reference at call time (not a stale closure). Handle loading, success, and error states and invalidate relevant queries on mutation success.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-7"
-        ],
-        "quotes": [
-          "PLZ OTP BASED LOGIN AND PROFILE PAGE BANAYE PROFASANAL"
-        ]
-      },
-      "acceptanceCriteria": [
-        "useGenerateOTP mutation calls the backend generateOTP function and returns the OTP result",
-        "useVerifyOTP mutation calls verifyOTP and returns success or error",
-        "useGetCallerUserProfile query fetches the current user's full profile",
-        "useUpdateCallerUserProfile mutation updates the profile and invalidates the profile query on success",
-        "All hooks use a fresh actor reference at invocation time",
-        "Loading and error states are properly exposed for UI consumption"
+        "Submitting the profile form with name, email, and phone successfully saves the profile and closes the modal",
+        "The user is redirected to the dashboard after a successful save",
+        "If the backend returns an error, the error message is displayed clearly inside the modal",
+        "The actor used in the mutation is always the latest authenticated instance"
       ]
     }
   ],
   "constraints": [
-    "Do not remove or break existing Internet Identity authentication infrastructure — it may be retained as a secondary option",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "All Motoko logic must remain in backend/main.mo (single-actor architecture)",
-    "OTP expiry must be enforced on the backend, not just the frontend",
-    "No external email/SMS service integrations — OTP is displayed inline (simulated delivery)"
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts",
+    "Do not change the overall OTP login flow — only fix the profile save path"
   ],
   "nonGoals": [
-    "Real email or SMS delivery of OTP codes",
-    "Third-party authentication providers (OAuth, Auth0, etc.)",
-    "Password-based authentication",
-    "Two-factor authentication beyond OTP",
-    "Changes to the existing dashboard, leads, customers, deals, reminders, solar projects, or admin modules"
+    "Redesigning the Profile Setup modal UI",
+    "Adding new profile fields beyond name, email, and phone",
+    "Changing the authentication mechanism"
   ],
   "imageRequirements": {
     "required": [],

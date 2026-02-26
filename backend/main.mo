@@ -6,13 +6,13 @@ import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import List "mo:core/List";
-import Migration "migration";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import UserApproval "user-approval/approval";
 
 // Use migration for data upgrade.
-(with migration = Migration.run)
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -186,9 +186,9 @@ actor {
   // role assigned, so we cannot gate this on #user role. After saving the
   // profile we auto-assign the #user role (unless the caller is already an
   // admin or is being bootstrapped as the first admin).
-  public shared ({ caller }) func saveCallerUserProfile(name : Text, email : Text, phone : Text) : async { #ok; #error : Text } {
+  public shared ({ caller }) func saveCallerUserProfile(name : Text, email : Text, phone : Text) : async { #ok } {
     if (caller.isAnonymous()) {
-      return #error("Unauthorized: Anonymous users cannot save profiles");
+      Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
     };
 
     let profile : UserProfile = {
@@ -712,3 +712,5 @@ actor {
     };
   };
 };
+
+

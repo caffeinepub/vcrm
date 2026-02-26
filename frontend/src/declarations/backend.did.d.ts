@@ -156,8 +156,7 @@ export interface _SERVICE {
   'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<
     [string, string, string],
-    { 'ok' : null } |
-      { 'error' : string }
+    { 'ok' : null }
   >,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
   'updateCustomer' : ActorMethod<

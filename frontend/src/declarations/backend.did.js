@@ -189,7 +189,7 @@ export const idlService = IDL.Service({
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
-      [IDL.Variant({ 'ok' : IDL.Null, 'error' : IDL.Text })],
+      [IDL.Variant({ 'ok' : IDL.Null })],
       [],
     ),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
@@ -426,7 +426,7 @@ export const idlFactory = ({ IDL }) => {
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],
-        [IDL.Variant({ 'ok' : IDL.Null, 'error' : IDL.Text })],
+        [IDL.Variant({ 'ok' : IDL.Null })],
         [],
       ),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),

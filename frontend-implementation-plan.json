@@ -1,75 +1,27 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "OTP-Based Login System and Professional User Profile Page",
+  "title": "Fix Profile Setup modal 'Unable to save profile' error",
   "requirements": [
     {
-      "id": "REQ-46",
-      "summary": "Replace Internet Identity login with professional OTP-based login UI featuring two-step verification, inline OTP display, countdown timer, and brand-themed responsive design",
+      "id": "REQ-2",
+      "summary": "Fix the ProfileSetupModal component to correctly invoke the backend actor's saveCallerUserProfile function with proper actor handling and error display",
       "acceptanceCriteria": [
-        "Step 1 shows email input and 'Send OTP' button; invalid email format shows inline validation error",
-        "Step 2 shows OTP input, 10-minute countdown timer, 'Resend OTP' link, and 'Verify' button",
-        "Generated OTP is displayed in an info banner on the login page (simulated delivery)",
-        "Resend OTP resets the countdown and generates a new OTP",
-        "Successful OTP verification redirects to dashboard (or profile setup if profile incomplete)",
-        "Wrong or expired OTP shows a clear inline error message",
-        "Page matches the existing emerald green / dark teal brand theme and is fully responsive"
+        "Submitting the profile form with name, email, and phone successfully saves the profile and closes the modal",
+        "The user is redirected to the dashboard after a successful save",
+        "If the backend returns an error, the error message is displayed clearly inside the modal",
+        "The actor used in the mutation is always the latest authenticated instance"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/LoginPage.tsx",
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
           "operation": "modify",
-          "description": "Replace the Internet Identity sign-in button with a two-step OTP login flow. Step 1: email input with 'Send OTP' button and inline validation. Step 2: 6-digit OTP input (individual boxes or single input), countdown timer (10 minutes), 'Resend OTP' link, and 'Verify' button. Display the generated OTP in a highlighted info banner (simulated delivery). On successful verification, store session and redirect to dashboard or profile setup. Apply emerald green and dark teal brand theme. Use the useGenerateOTP and useVerifyOTP hooks from useQueries.ts. Handle loading states, error messages, and countdown logic in component state."
-        }
-      ]
-    },
-    {
-      "id": "REQ-48",
-      "summary": "Create a professional Profile page displaying user information with inline editing for name, email, and phone, read-only role and status, and a re-verify OTP button",
-      "acceptanceCriteria": [
-        "Profile page at /profile displays name, email, phone, role, account status, and member-since date",
-        "User can edit name, email, and phone via an inline form or edit modal; changes are saved to the backend",
-        "Role and account status fields are read-only and clearly labeled",
-        "'Re-verify via OTP' button triggers a new OTP flow for the registered email",
-        "Success and error toasts appear on save",
-        "Route /profile is registered in App.tsx",
-        "Sidebar navigation in Layout.tsx includes a 'Profile' link with an appropriate icon",
-        "Page is fully responsive and matches the emerald green / dark teal brand theme"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProfilePage.tsx",
-          "operation": "create",
-          "description": "Create a professional Profile page at /profile that displays the logged-in user's profile information in a clean card-based layout: full name, email, phone, role, account status (approval status), and member-since date. Include an inline edit form or edit modal allowing the user to update name, email, and phone. Mark role and account status as read-only with clear labels. Add a 'Re-verify via OTP' button that triggers useGenerateOTP with the user's registered email and displays the OTP flow inline or in a modal. Use useGetCallerUserProfile to fetch data and useUpdateCallerUserProfile to save changes. Show success/error toasts on save. Apply the emerald green / dark teal brand theme and ensure full responsiveness."
+          "description": "Fix the saveCallerUserProfile mutation to pass name, email, and phone as three separate string arguments (not as an object). Update the mutation call in handleSubmit to match the backend Candid signature: actor.saveCallerUserProfile(formData.name, formData.email, formData.phone). Ensure the actor is fetched fresh from useActor at mutation time. Handle both the #ok success variant and potential error results from the backend, displaying any error message clearly in the UI. On success, invalidate the currentUserProfile query and allow the Layout component to handle navigation."
         },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register the /profile route in the TanStack Router configuration, importing and wiring ProfilePage.tsx as the component for this route."
-        },
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Add a 'Profile' navigation link in the sidebar with an appropriate icon (e.g., User or UserCircle from lucide-react). Position it logically within the existing navigation (e.g., below Dashboard or near the bottom of user-facing links). Ensure the link points to /profile and follows the existing sidebar styling."
-        }
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "summary": "Add React Query hooks for OTP generation, OTP verification, fetching caller profile, and updating caller profile with proper actor refresh and query invalidation",
-      "acceptanceCriteria": [
-        "useGenerateOTP mutation calls the backend generateOTP function and returns the OTP result",
-        "useVerifyOTP mutation calls verifyOTP and returns success or error",
-        "useGetCallerUserProfile query fetches the current user's full profile",
-        "useUpdateCallerUserProfile mutation updates the profile and invalidates the profile query on success",
-        "All hooks use a fresh actor reference at invocation time",
-        "Loading and error states are properly exposed for UI consumption"
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add four new hooks: (1) useGenerateOTP — a useMutation that accepts email as a parameter and calls actor.generateOTP(email), returning the OTP string or error; (2) useVerifyOTP — a useMutation that accepts email and otp and calls actor.verifyOTP(email, otp), returning OTPVerificationResult; (3) useGetCallerUserProfile — a useQuery that calls actor.getCallerUserProfile() to fetch the current user's full profile (name, email, phone, role, approvalStatus, joinDate) with proper enabled/retry logic; (4) useUpdateCallerUserProfile — a useMutation that accepts name, email, and phone, calls actor.saveCallerUserProfile(name, email, phone), and invalidates the 'currentUserProfile' query on success. Ensure all hooks use a fresh actor reference at call time (via useActor()) and expose loading and error states for UI consumption."
+          "description": "Update the useSaveCallerUserProfile mutation hook to accept three separate string parameters (name: string, email: string, phone: string) instead of a UserProfile object. Ensure the mutation function calls actor.saveCallerUserProfile(name, email, phone) with these three arguments to match the backend Candid interface. Preserve all error handling and query invalidation logic."
         }
       ]
     }

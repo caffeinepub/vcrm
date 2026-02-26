@@ -186,6 +186,9 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum Variant_ok {
+    ok = "ok"
+}
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addCustomer(name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
@@ -240,13 +243,7 @@ export interface backendInterface {
     markReminderOverdue(id: bigint): Promise<void>;
     moveDealStage(id: bigint, stage: DealStage): Promise<Deal>;
     requestApproval(): Promise<void>;
-    saveCallerUserProfile(name: string, email: string, phone: string): Promise<{
-        __kind__: "ok";
-        ok: null;
-    } | {
-        __kind__: "error";
-        error: string;
-    }>;
+    saveCallerUserProfile(name: string, email: string, phone: string): Promise<Variant_ok>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     updateCustomer(id: bigint, name: string, email: string, phone: string, address: string, latitude: number, longitude: number): Promise<Customer>;
     updateDeal(id: bigint, title: string, value: number, customerId: bigint, stage: DealStage): Promise<Deal>;
@@ -855,13 +852,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async saveCallerUserProfile(arg0: string, arg1: string, arg2: string): Promise<{
-        __kind__: "ok";
-        ok: null;
-    } | {
-        __kind__: "error";
-        error: string;
-    }> {
+    async saveCallerUserProfile(arg0: string, arg1: string, arg2: string): Promise<Variant_ok> {
         if (this.processError) {
             try {
                 const result = await this.actor.saveCallerUserProfile(arg0, arg1, arg2);
@@ -1158,22 +1149,8 @@ function from_candid_variant_n35(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }
 function from_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     ok: null;
-} | {
-    error: string;
-}): {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "error";
-    error: string;
-} {
-    return "ok" in value ? {
-        __kind__: "ok",
-        ok: value.ok
-    } : "error" in value ? {
-        __kind__: "error",
-        error: value.error
-    } : value;
+}): Variant_ok {
+    return "ok" in value ? Variant_ok.ok : value;
 }
 function from_candid_variant_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     expired: null;

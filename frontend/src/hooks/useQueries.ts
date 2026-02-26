@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRef, useEffect } from 'react';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import type {
@@ -18,7 +17,6 @@ import type {
 } from '../backend';
 import { UserRole } from '../backend';
 import type { Principal } from '@dfinity/principal';
-import type { backendInterface } from '../backend';
 
 // ─── OTP Authentication ───────────────────────────────────────────────────────
 
@@ -87,13 +85,7 @@ export function useUpdateCallerUserProfile() {
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
       if (!actor) throw new Error('Actor not available');
-      const result = await actor.saveCallerUserProfile(profile.name, profile.email, profile.phone);
-      if (result && typeof result === 'object' && '__kind__' in result) {
-        if (result.__kind__ === 'error') {
-          throw new Error((result as { __kind__: 'error'; error: string }).error ?? 'Failed to update profile');
-        }
-      }
-      return result;
+      return actor.saveCallerUserProfile(profile.name, profile.email, profile.phone);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -102,100 +94,20 @@ export function useUpdateCallerUserProfile() {
 }
 
 export function useSaveCallerUserProfile() {
-  const queryClient = useQueryClient();
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor } = useActor();
   const { identity } = useInternetIdentity();
-
-  // Keep refs to the latest actor and identity so the mutationFn always reads
-  // the most current values at invocation time — never a stale closure.
-  const actorRef = useRef<backendInterface | null>(actor);
-  const actorFetchingRef = useRef<boolean>(actorFetching);
-  const identityRef = useRef(identity);
-
-  useEffect(() => {
-    actorRef.current = actor;
-  }, [actor]);
-
-  useEffect(() => {
-    actorFetchingRef.current = actorFetching;
-  }, [actorFetching]);
-
-  useEffect(() => {
-    identityRef.current = identity;
-  }, [identity]);
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (profile: UserProfile) => {
-      const MAX_RETRIES = 5;
-      const RETRY_DELAY_MS = 1000;
-      const MAX_WAIT_MS = 8000;
-      const POLL_INTERVAL_MS = 500;
-      const start = Date.now();
-
-      const isIdentityAuthenticated = () => {
-        const id = identityRef.current;
-        return !!id && !id.getPrincipal().isAnonymous();
-      };
-
-      const getAuthenticatedActor = (): backendInterface | null => {
-        if (!isIdentityAuthenticated()) return null;
-        return actorRef.current;
-      };
-
-      // Poll until we have an authenticated actor (up to MAX_WAIT_MS)
-      let authenticatedActor = getAuthenticatedActor();
-      while (!authenticatedActor && Date.now() - start < MAX_WAIT_MS) {
-        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        authenticatedActor = getAuthenticatedActor();
+    mutationFn: async (params: { name: string; email: string; phone: string }) => {
+      // Validate identity is authenticated
+      if (!identity || identity.getPrincipal().isAnonymous()) {
+        throw new Error('You must be logged in to save your profile.');
       }
-
-      if (!authenticatedActor) {
-        const err = new Error('actor_not_ready');
-        (err as Error & { type: string }).type = 'actor_not_ready';
-        throw err;
+      if (!actor) {
+        throw new Error('Backend connection not ready. Please wait a moment and try again.');
       }
-
-      // Retry the backend call up to MAX_RETRIES times with delays
-      let lastError: unknown = null;
-      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        try {
-          const currentActor = getAuthenticatedActor() ?? authenticatedActor;
-          const result = await currentActor.saveCallerUserProfile(profile.name, profile.email, profile.phone ?? '');
-
-          if (result && typeof result === 'object' && '__kind__' in result) {
-            if (result.__kind__ === 'error') {
-              const errMsg = (result as { __kind__: 'error'; error: string }).error ?? '';
-              if (errMsg.toLowerCase().includes('anonymous')) {
-                lastError = new Error(errMsg);
-                if (attempt < MAX_RETRIES - 1) {
-                  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-                }
-                continue;
-              }
-              const err = new Error('Unable to save profile. Please try again.');
-              (err as Error & { type: string }).type = 'save_error';
-              throw err;
-            }
-            return result;
-          }
-
-          return result;
-        } catch (err: unknown) {
-          if (err instanceof Error && (err as Error & { type?: string }).type === 'save_error') {
-            throw err;
-          }
-          lastError = err;
-          if (attempt < MAX_RETRIES - 1) {
-            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-          }
-        }
-      }
-
-      const msg = lastError instanceof Error ? lastError.message : String(lastError);
-      const wrapped = new Error('Unable to save profile. Please try again.');
-      (wrapped as Error & { type: string; originalMessage: string }).type = 'save_error';
-      (wrapped as Error & { type: string; originalMessage: string }).originalMessage = msg;
-      throw wrapped;
+      return actor.saveCallerUserProfile(params.name, params.email, params.phone);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -341,7 +253,6 @@ export function useUpdateCustomer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer'] });
     },
   });
 }
@@ -359,19 +270,6 @@ export function useDeleteCustomer() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
-  });
-}
-
-export function useGetCustomerProjects(customerId: bigint | null) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<SolarProject[]>({
-    queryKey: ['customerProjects', customerId?.toString()],
-    queryFn: async () => {
-      if (!actor || customerId === null) return [];
-      return actor.getCustomerProjects(customerId);
-    },
-    enabled: !!actor && !isFetching && customerId !== null,
   });
 }
 
@@ -417,6 +315,7 @@ export function useUpdateDeal() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
 }
@@ -572,24 +471,44 @@ export function useGetSolarProject(projectId: bigint | null) {
   });
 }
 
+export function useGetCustomerProjects(customerId: bigint | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<SolarProject[]>({
+    queryKey: ['customerProjects', customerId?.toString()],
+    queryFn: async () => {
+      if (!actor || customerId === null) return [];
+      return actor.getCustomerProjects(customerId);
+    },
+    enabled: !!actor && !isFetching && customerId !== null,
+  });
+}
+
 export function useAddSolarProject() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: {
-      customerId: bigint; systemSizeKW: number; installationStatus: ProjectStatus;
-      notes: string; surveyorName: string; date: bigint;
+      customerId: bigint;
+      systemSizeKW: number;
+      installationStatus: ProjectStatus;
+      notes: string;
+      surveyorName: string;
+      date: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.addSolarProject(
-        params.customerId, params.systemSizeKW, params.installationStatus,
-        params.notes, params.surveyorName, params.date
+        params.customerId,
+        params.systemSizeKW,
+        params.installationStatus,
+        params.notes,
+        params.surveyorName,
+        params.date
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
-      queryClient.invalidateQueries({ queryKey: ['customerProjects'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
   });
@@ -601,19 +520,25 @@ export function useUpdateSolarProject() {
 
   return useMutation({
     mutationFn: async (params: {
-      id: bigint; systemSizeKW: number; installationStatus: ProjectStatus;
-      notes: string; surveyorName: string; date: bigint;
+      id: bigint;
+      systemSizeKW: number;
+      installationStatus: ProjectStatus;
+      notes: string;
+      surveyorName: string;
+      date: bigint;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateSolarProject(
-        params.id, params.systemSizeKW, params.installationStatus,
-        params.notes, params.surveyorName, params.date
+        params.id,
+        params.systemSizeKW,
+        params.installationStatus,
+        params.notes,
+        params.surveyorName,
+        params.date
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
-      queryClient.invalidateQueries({ queryKey: ['solarProject'] });
-      queryClient.invalidateQueries({ queryKey: ['customerProjects'] });
     },
   });
 }
@@ -629,7 +554,6 @@ export function useUpdateProjectStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solarProjects'] });
-      queryClient.invalidateQueries({ queryKey: ['solarProject'] });
     },
   });
 }
@@ -653,10 +577,10 @@ export function useDeleteSolarProject() {
 export function useGetProjectCountByStatus() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<[bigint, bigint, bigint, bigint]>({
     queryKey: ['projectCountByStatus'],
     queryFn: async () => {
-      if (!actor) return null;
+      if (!actor) return [0n, 0n, 0n, 0n];
       return actor.getProjectCountByStatus();
     },
     enabled: !!actor && !isFetching,
@@ -737,7 +661,6 @@ export function useRequestApproval() {
       return actor.requestApproval();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['approvals'] });
       queryClient.invalidateQueries({ queryKey: ['isCallerApproved'] });
     },
   });
@@ -781,6 +704,39 @@ export function useAdminAssignRole() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['approvals'] });
       queryClient.invalidateQueries({ queryKey: ['adminAllUsers'] });
+    },
+  });
+}
+
+export function useGetCallerUserRole() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<UserRole>({
+    queryKey: ['callerUserRole'],
+    queryFn: async () => {
+      if (!actor) return UserRole.guest;
+      try {
+        return await actor.getCallerUserRole();
+      } catch {
+        return UserRole.guest;
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAssignCallerUserRole() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { user: Principal; role: UserRole }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.assignCallerUserRole(params.user, params.role);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['callerUserRole'] });
+      queryClient.invalidateQueries({ queryKey: ['approvals'] });
     },
   });
 }
