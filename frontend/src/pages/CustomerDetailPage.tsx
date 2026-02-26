@@ -2,7 +2,6 @@ import { useParams, useNavigate } from '@tanstack/react-router';
 import { useGetCustomer, useGetCustomerProjects, useDeleteCustomer } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit2, Trash2, MapPin, Mail, Phone, Sun } from 'lucide-react';
 import StaticMapWidget from '../components/StaticMapWidget';
 import CustomerFormDialog from '../components/CustomerFormDialog';
@@ -71,7 +70,7 @@ export default function CustomerDetailPage() {
           <ArrowLeft size={18} />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-display font-bold text-foreground">{customer.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{customer.name}</h1>
           <p className="text-muted-foreground text-sm">Customer Details</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowEdit(true)}>
@@ -84,9 +83,9 @@ export default function CustomerDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contact Info */}
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="font-display text-base">Contact Information</CardTitle>
+            <CardTitle className="text-base">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -120,9 +119,9 @@ export default function CustomerDetailPage() {
         </Card>
 
         {/* Location Map */}
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="font-display text-base">Location</CardTitle>
+            <CardTitle className="text-base">Location</CardTitle>
           </CardHeader>
           <CardContent>
             <StaticMapWidget latitude={customer.latitude} longitude={customer.longitude} />
@@ -131,10 +130,10 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* Solar Projects */}
-      <Card className="shadow-card">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-display text-base flex items-center gap-2">
-            <Sun size={16} className="text-orange" />
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sun size={16} className="text-amber-500" />
             Solar Projects ({projects?.length ?? 0})
           </CardTitle>
         </CardHeader>
@@ -156,7 +155,7 @@ export default function CustomerDetailPage() {
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[project.installationStatus] ?? ''}`}>
-                    {STATUS_LABELS[project.installationStatus] ?? project.installationStatus}
+                    {STATUS_LABELS[project.installationStatus] ?? String(project.installationStatus)}
                   </span>
                 </div>
               ))}

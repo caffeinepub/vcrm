@@ -1,32 +1,54 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T11:54:35.901Z",
+  "generatedAt": "2026-02-26T15:47:51.529Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the backend `saveCallerUserProfile` function to correctly accept and store name, email, and phone fields. Ensure the Candid type signature matches what the frontend sends, and that the function returns a success result without throwing or returning an error variant.",
+        "summary": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Fix the ProfileSetupModal component to correctly invoke the backend actor's `saveCallerUserProfile` function. Ensure the actor reference is fresh (not stale), argument types match the current Candid interface, and all error cases surface a meaningful message. On success, dismiss the modal and proceed to the dashboard.",
+        "summary": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ProfileSetupModal.tsx",
+          "frontend/src/components/Layout.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/Layout.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/AdminPage.tsx",
+          "frontend/src/components/Layout.tsx",
+          "frontend/src/App.tsx",
           "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/ProfileSetupModal.tsx",
+          "frontend/src/pages/AdminPage.tsx",
+          "frontend/src/components/Layout.tsx",
+          "frontend/src/App.tsx",
           "frontend/src/hooks/useQueries.ts"
         ]
       }
@@ -35,17 +57,20 @@
   "changedFiles": [
     "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/components/Layout.tsx",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/AdminPage.tsx",
+    "frontend/src/pages/CustomerDetailPage.tsx",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/SolarProjectDetailPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

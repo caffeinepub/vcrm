@@ -1,54 +1,104 @@
 {
   "kind": "build_request",
-  "title": "Fix Profile Setup modal 'Unable to save profile' error",
+  "title": "Hardcode Super Admin and build Admin Panel for user approval",
+  "projectName": "VCRM Solar CRM",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the backend `saveCallerUserProfile` function to correctly accept and store name, email, and phone fields. Ensure the Candid type signature matches what the frontend sends, and that the function returns a success result without throwing or returning an error variant.",
+      "text": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-3",
+          "msg-user-5"
         ],
         "quotes": [
-          "Unable to save profile. Please try again."
+          "me Gmail Id :- vcrm.com@gmail.com ko Admin banana chahata hu",
+          "vcrm.com@gmail.com ko Super Admin hardcode kiya jayega"
         ]
       },
       "acceptanceCriteria": [
-        "Calling saveCallerUserProfile with valid name, email, and phone values persists the profile in stable storage",
-        "The function returns a #ok result variant on success",
-        "No trap or error is thrown for valid inputs"
+        "Logging in with vcrm.com@gmail.com never results in an 'Access Pending Approval' state",
+        "The backend returns an admin/owner role for vcrm.com@gmail.com without requiring any manual approval",
+        "Other users without approval are still correctly blocked by the pending approval flow"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Fix the ProfileSetupModal component to correctly invoke the backend actor's `saveCallerUserProfile` function. Ensure the actor reference is fresh (not stale), argument types match the current Candid interface, and all error cases surface a meaningful message. On success, dismiss the modal and proceed to the dashboard.",
-      "target": "frontend",
+      "text": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-4",
+          "msg-user-5"
         ],
         "quotes": [
-          "Unable to save profile. Please try again."
+          "Option C",
+          "Admin ek dedicated panel se pending users ki list dekh sake, Admin kisi bhi user ko Approve ya Reject kar sake"
         ]
       },
       "acceptanceCriteria": [
-        "Submitting the profile form with name, email, and phone successfully saves the profile and closes the modal",
-        "The user is redirected to the dashboard after a successful save",
-        "If the backend returns an error, the error message is displayed clearly inside the modal",
-        "The actor used in the mutation is always the latest authenticated instance"
+        "Backend exposes a function to fetch all pending users accessible only to admins",
+        "Backend exposes an approve function that changes a user's status to approved",
+        "Backend exposes a reject function that changes a user's status to rejected/blocked",
+        "Approved users can subsequently access the dashboard",
+        "Rejected users remain blocked from the dashboard"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-2",
+          "msg-user-5"
+        ],
+        "quotes": [
+          "not solve my problem",
+          "vcrm.com@gmail.com login karte hi seedha Dashboard par jayegi"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After OTP login with vcrm.com@gmail.com, the user is immediately on the Dashboard page",
+        "The 'Access Pending Approval' screen is never displayed to the Super Admin user",
+        "Other non-approved users still see the 'Access Pending Approval' screen"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-4",
+          "msg-user-5"
+        ],
+        "quotes": [
+          "Option C",
+          "Admin Panel banega jahan Admin sabhi pending users ki list dekh sakega, Admin kisi bhi user ko Approve ya Reject kar sakega"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin Panel page lists all pending users with name, email, and an Approve/Reject action per user",
+        "Clicking Approve changes the user's status and moves them out of the pending list",
+        "Clicking Reject blocks the user and removes them from the pending list",
+        "The page shows separate sections or tabs for Pending, Approved, and Rejected users",
+        "The Admin Panel link appears in the sidebar only for admin/owner role users",
+        "Non-admin users cannot navigate to or access the Admin Panel page"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts or frontend/src/hooks/useActor.ts",
-    "Do not change the overall OTP login flow — only fix the profile save path"
+    "The Super Admin email vcrm.com@gmail.com must be hardcoded and always bypass the approval flow",
+    "Do not break the existing OTP login flow for non-admin users",
+    "All Motoko logic must remain in the single backend/main.mo actor"
   ],
   "nonGoals": [
-    "Redesigning the Profile Setup modal UI",
-    "Adding new profile fields beyond name, email, and phone",
-    "Changing the authentication mechanism"
+    "Adding any other authentication method beyond existing Gmail OTP",
+    "Changing the visual design or color theme of the application",
+    "Adding role types other than Super Admin and regular user"
   ],
   "imageRequirements": {
     "required": [],

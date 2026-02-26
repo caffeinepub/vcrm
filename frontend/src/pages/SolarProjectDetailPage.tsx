@@ -85,7 +85,7 @@ export default function SolarProjectDetailPage() {
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-display font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-foreground">
               {customer?.name ?? 'Solar Project'}
             </h1>
             <span
@@ -106,20 +106,49 @@ export default function SolarProjectDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* System Info */}
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="font-display text-base flex items-center gap-2">
-              <Sun size={16} className="text-orange" /> System Information
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sun size={16} className="text-amber-500" /> System Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-orange/10 flex items-center justify-center">
-                <Zap size={14} className="text-orange" />
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Zap size={14} className="text-amber-600" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">System Size</p>
                 <p className="text-lg font-bold text-foreground">{project.systemSizeKW} kW</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <User size={14} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Customer</p>
+                <p className="text-sm font-medium text-foreground">{customer?.name ?? '—'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Site Survey */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText size={16} className="text-primary" /> Site Survey
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <User size={14} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Surveyor</p>
+                <p className="text-sm font-medium text-foreground">{project.siteSurvey.surveyorName || '—'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -131,70 +160,31 @@ export default function SolarProjectDetailPage() {
                 <p className="text-sm font-medium text-foreground">{formatDate(project.siteSurvey.date)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <User size={14} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Surveyor</p>
-                <p className="text-sm font-medium text-foreground">
-                  {project.siteSurvey.surveyorName || '—'}
-                </p>
-              </div>
-            </div>
             {project.siteSurvey.notes && (
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
                   <FileText size={14} className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Survey Notes</p>
-                  <p className="text-sm text-foreground mt-0.5">{project.siteSurvey.notes}</p>
+                  <p className="text-xs text-muted-foreground">Notes</p>
+                  <p className="text-sm text-foreground">{project.siteSurvey.notes}</p>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Customer Location */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="font-display text-base flex items-center gap-2">
-              <MapPin size={16} className="text-primary" /> Customer Location
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {customer ? (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">{customer.address || 'No address provided'}</p>
-                <StaticMapWidget latitude={customer.latitude} longitude={customer.longitude} />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Customer data not available</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Customer Info */}
+      {/* Customer Location */}
       {customer && (
-        <Card className="shadow-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="font-display text-base">Customer Information</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPin size={16} className="text-primary" /> Installation Location
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Name</p>
-              <p className="text-sm font-medium text-foreground">{customer.name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Email</p>
-              <p className="text-sm font-medium text-foreground">{customer.email || '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Phone</p>
-              <p className="text-sm font-medium text-foreground">{customer.phone || '—'}</p>
-            </div>
+          <CardContent>
+            <StaticMapWidget latitude={customer.latitude} longitude={customer.longitude} />
           </CardContent>
         </Card>
       )}

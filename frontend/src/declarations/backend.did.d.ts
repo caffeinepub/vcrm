@@ -101,19 +101,7 @@ export interface _SERVICE {
     [bigint, number, ProjectStatus, string, string, Time],
     SolarProject
   >,
-  'adminAssignRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'adminGetAllUsers' : ActorMethod<[], Array<Principal>>,
-  'adminGetSystemStats' : ActorMethod<
-    [],
-    {
-      'totalSolarProjects' : bigint,
-      'totalLeads' : bigint,
-      'totalReminders' : bigint,
-      'totalUsers' : bigint,
-      'totalCustomers' : bigint,
-      'totalDeals' : bigint,
-    }
-  >,
+  'approveUser' : ActorMethod<[Principal], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteCustomer' : ActorMethod<[bigint], undefined>,
   'deleteDeal' : ActorMethod<[bigint], undefined>,
@@ -144,8 +132,10 @@ export interface _SERVICE {
   'getFilteredReminders' : ActorMethod<[boolean], Array<Reminder>>,
   'getLead' : ActorMethod<[bigint], [] | [Lead]>,
   'getOverdueReminders' : ActorMethod<[], Array<Reminder>>,
+  'getPendingApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'getProjectCountByStatus' : ActorMethod<[], [bigint, bigint, bigint, bigint]>,
   'getSolarProject' : ActorMethod<[bigint], [] | [SolarProject]>,
+  'getSuperAdminPrincipal' : ActorMethod<[], [] | [Principal]>,
   'getUpcomingReminders' : ActorMethod<[Time], Array<Reminder>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
@@ -153,6 +143,7 @@ export interface _SERVICE {
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'markReminderOverdue' : ActorMethod<[bigint], undefined>,
   'moveDealStage' : ActorMethod<[bigint, DealStage], Deal>,
+  'rejectUser' : ActorMethod<[Principal], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<
     [string, string, string],

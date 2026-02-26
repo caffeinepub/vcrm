@@ -1,197 +1,413 @@
-import { useIsCallerAdmin, useListApprovals, useAdminGetAllUsers, useAdminAssignRole, useSetApproval, useAdminGetSystemStats } from '../hooks/useQueries';
+import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { Shield, Check, X, Users, Clock, UserCheck, UserX, RefreshCw } from 'lucide-react';
+import { useListApprovals, useSetApproval, useGetCallerRole, useGetUserProfile } from '../hooks/useQueries';
 import { ApprovalStatus, UserRole } from '../backend';
+import { Principal } from '@dfinity/principal';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Users, BarChart3, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Principal } from '@dfinity/principal';
+import { toast } from 'sonner';
 
-function StatCard({ title, value, icon: Icon, color }: {
-  title: string; value: number | string; icon: React.ElementType; color: string;
-}) {
+const SUPER_ADMIN_EMAIL = 'vcrm.com@gmail.com';
+
+function isSuperAdminEmail(): boolean {
+  const email = localStorage.getItem('vcrm_logged_in_email');
+  return email === SUPER_ADMIN_EMAIL;
+}
+
+interface UserRowProps {
+  principal: Principal;
+  status: ApprovalStatus;
+  onApprove: (principal: Principal) => void;
+  onReject: (principal: Principal) => void;
+  isApproving: boolean;
+  isRejecting: boolean;
+}
+
+function UserRow({ principal, status, onApprove, onReject, isApproving, isRejecting }: UserRowProps) {
+  const { data: profile, isLoading: profileLoading } = useGetUserProfile(principal);
+  const principalStr = principal.toString();
+  const shortPrincipal = principalStr.length > 20 ? `${principalStr.slice(0, 10)}...${principalStr.slice(-6)}` : principalStr;
+
   return (
-    <Card className="shadow-card">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-            <Icon size={18} className="text-white" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{title}</p>
-            <p className="text-2xl font-display font-bold text-foreground">{value}</p>
-          </div>
+    <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Users className="w-5 h-5 text-primary" />
         </div>
-      </CardContent>
-    </Card>
+        <div className="min-w-0">
+          {profileLoading ? (
+            <Skeleton className="h-4 w-32 mb-1" />
+          ) : (
+            <div className="font-medium text-foreground truncate">
+              {profile?.name || 'Unknown User'}
+            </div>
+          )}
+          {profileLoading ? (
+            <Skeleton className="h-3 w-48" />
+          ) : (
+            <div className="text-sm text-muted-foreground truncate">
+              {profile?.email || shortPrincipal}
+            </div>
+          )}
+          {profile?.phone && (
+            <div className="text-xs text-muted-foreground">{profile.phone}</div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+        {status === ApprovalStatus.pending && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => onApprove(principal)}
+              disabled={isApproving || isRejecting}
+            >
+              {isApproving ? (
+                <RefreshCw className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <Check className="w-3 h-3 mr-1" />
+              )}
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onReject(principal)}
+              disabled={isApproving || isRejecting}
+            >
+              {isRejecting ? (
+                <RefreshCw className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <X className="w-3 h-3 mr-1" />
+              )}
+              Reject
+            </Button>
+          </>
+        )}
+        {status === ApprovalStatus.approved && (
+          <>
+            <Badge variant="outline" className="border-green-500 text-green-600">
+              <UserCheck className="w-3 h-3 mr-1" />
+              Approved
+            </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-red-500 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onReject(principal)}
+              disabled={isRejecting}
+            >
+              {isRejecting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+            </Button>
+          </>
+        )}
+        {status === ApprovalStatus.rejected && (
+          <>
+            <Badge variant="outline" className="border-red-500 text-red-600">
+              <UserX className="w-3 h-3 mr-1" />
+              Rejected
+            </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => onApprove(principal)}
+              disabled={isApproving}
+            >
+              {isApproving ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
 export default function AdminPage() {
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
-  const { data: approvals, isLoading: approvalsLoading } = useListApprovals();
-  const { data: systemStats, isLoading: statsLoading } = useAdminGetSystemStats();
-  const setApproval = useSetApproval();
-  const adminAssignRole = useAdminAssignRole();
+  const navigate = useNavigate();
+  const { data: callerRole, isLoading: roleLoading } = useGetCallerRole();
+  const { data: approvals, isLoading: approvalsLoading, refetch } = useListApprovals();
+  const { mutate: setApproval } = useSetApproval();
 
-  const handleApproval = async (principal: Principal, status: ApprovalStatus) => {
-    try {
-      await setApproval.mutateAsync({ user: principal, status });
-      toast.success(`User ${status === ApprovalStatus.approved ? 'approved' : 'rejected'}`);
-    } catch {
-      toast.error('Failed to update approval status');
-    }
-  };
+  const [pendingActions, setPendingActions] = useState<Record<string, 'approving' | 'rejecting'>>({});
 
-  const handleRoleChange = async (principal: Principal, role: UserRole) => {
-    try {
-      await adminAssignRole.mutateAsync({ user: principal, role });
-      toast.success('Role updated successfully');
-    } catch {
-      toast.error('Failed to update role');
-    }
-  };
+  const isSuperAdmin = isSuperAdminEmail();
+  const isAdmin = isSuperAdmin || callerRole === UserRole.admin;
 
-  if (adminLoading) {
+  // Access guard
+  if (!roleLoading && !isAdmin) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
-        </div>
+      <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
+        <Shield className="w-16 h-16 text-muted-foreground" />
+        <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
+        <p className="text-muted-foreground text-center">You don't have permission to access the Admin Panel.</p>
+        <Button onClick={() => navigate({ to: '/dashboard' })}>Go to Dashboard</Button>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-        <Shield size={40} className="mb-3 opacity-30" />
-        <p className="font-medium text-foreground">Access Denied</p>
-        <p className="text-sm mt-1">You need admin privileges to access this page.</p>
-      </div>
-    );
-  }
+  const pendingUsers = approvals?.filter((a) => a.status === ApprovalStatus.pending) ?? [];
+  const approvedUsers = approvals?.filter((a) => a.status === ApprovalStatus.approved) ?? [];
+  const rejectedUsers = approvals?.filter((a) => a.status === ApprovalStatus.rejected) ?? [];
 
-  const approvalStatusBadge = (status: ApprovalStatus) => {
-    if (status === ApprovalStatus.approved) return <Badge className="bg-green-100 text-green-700 border-0">Approved</Badge>;
-    if (status === ApprovalStatus.rejected) return <Badge className="bg-red-100 text-red-700 border-0">Rejected</Badge>;
-    return <Badge className="bg-yellow-100 text-yellow-700 border-0">Pending</Badge>;
+  const handleApprove = (principal: Principal) => {
+    const key = principal.toString();
+    setPendingActions((prev) => ({ ...prev, [key]: 'approving' }));
+    setApproval(
+      { user: principal, status: ApprovalStatus.approved },
+      {
+        onSuccess: () => {
+          toast.success('User approved successfully!');
+          setPendingActions((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        },
+        onError: (err) => {
+          toast.error(`Failed to approve user: ${err.message}`);
+          setPendingActions((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        },
+      }
+    );
+  };
+
+  const handleReject = (principal: Principal) => {
+    const key = principal.toString();
+    setPendingActions((prev) => ({ ...prev, [key]: 'rejecting' }));
+    setApproval(
+      { user: principal, status: ApprovalStatus.rejected },
+      {
+        onSuccess: () => {
+          toast.success('User rejected.');
+          setPendingActions((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        },
+        onError: (err) => {
+          toast.error(`Failed to reject user: ${err.message}`);
+          setPendingActions((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        },
+      }
+    );
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Shield size={20} className="text-primary" />
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
+            <p className="text-sm text-muted-foreground">Manage user access and approvals</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Admin Panel</h1>
-          <p className="text-muted-foreground text-sm">System management and user control</p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={approvalsLoading}
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${approvalsLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {/* System Stats */}
-      {statsLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
-        </div>
-      ) : systemStats ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <StatCard title="Total Users" value={Number(systemStats.totalUsers)} icon={Users} color="bg-blue-500" />
-          <StatCard title="Total Leads" value={Number(systemStats.totalLeads)} icon={BarChart3} color="bg-indigo-500" />
-          <StatCard title="Total Customers" value={Number(systemStats.totalCustomers)} icon={Users} color="bg-purple-500" />
-          <StatCard title="Total Deals" value={Number(systemStats.totalDeals)} icon={BarChart3} color="bg-orange-500" />
-          <StatCard title="Solar Projects" value={Number(systemStats.totalSolarProjects)} icon={BarChart3} color="bg-yellow-500" />
-          <StatCard title="Reminders" value={Number(systemStats.totalReminders)} icon={Clock} color="bg-teal-500" />
-        </div>
-      ) : null}
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{pendingUsers.length}</div>
+                <div className="text-xs text-muted-foreground">Pending</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <UserCheck className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{approvedUsers.length}</div>
+                <div className="text-xs text-muted-foreground">Approved</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                <UserX className="w-4 h-4 text-red-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-foreground">{rejectedUsers.length}</div>
+                <div className="text-xs text-muted-foreground">Rejected</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* User Approvals */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="font-display text-base flex items-center gap-2">
-            <Users size={16} className="text-primary" />
-            User Management
-            {approvals && (
-              <Badge variant="secondary" className="ml-auto">
-                {approvals.length} users
+      {/* Tabs */}
+      <Tabs defaultValue="pending">
+        <TabsList className="mb-4">
+          <TabsTrigger value="pending" className="gap-2">
+            <Clock className="w-4 h-4" />
+            Pending
+            {pendingUsers.length > 0 && (
+              <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                {pendingUsers.length}
               </Badge>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {approvalsLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
-          ) : !approvals || approvals.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <Users size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No users registered yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {approvals.map((approval) => {
-                const principalStr = approval.principal.toString();
-                const shortPrincipal = `${principalStr.slice(0, 10)}...${principalStr.slice(-6)}`;
-                return (
-                  <div
-                    key={principalStr}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 flex-wrap"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Users size={14} className="text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-mono text-foreground truncate">{shortPrincipal}</p>
-                      <div className="mt-1">{approvalStatusBadge(approval.status)}</div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Select
-                        onValueChange={(role) => handleRoleChange(approval.principal, role as UserRole)}
-                      >
-                        <SelectTrigger className="h-8 w-28 text-xs">
-                          <SelectValue placeholder="Set role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={UserRole.admin}>Admin</SelectItem>
-                          <SelectItem value={UserRole.user}>User</SelectItem>
-                          <SelectItem value={UserRole.guest}>Guest</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {approval.status !== ApprovalStatus.approved && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs text-green-600 border-green-200 hover:bg-green-50"
-                          onClick={() => handleApproval(approval.principal, ApprovalStatus.approved)}
-                          disabled={setApproval.isPending}
-                        >
-                          <CheckCircle size={12} className="mr-1" /> Approve
-                        </Button>
-                      )}
-                      {approval.status !== ApprovalStatus.rejected && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => handleApproval(approval.principal, ApprovalStatus.rejected)}
-                          disabled={setApproval.isPending}
-                        >
-                          <XCircle size={12} className="mr-1" /> Reject
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </TabsTrigger>
+          <TabsTrigger value="approved" className="gap-2">
+            <UserCheck className="w-4 h-4" />
+            Approved
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="gap-2">
+            <UserX className="w-4 h-4" />
+            Rejected
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pending Approval Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {approvalsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : pendingUsers.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>No pending approval requests</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingUsers.map((user) => (
+                    <UserRow
+                      key={user.principal.toString()}
+                      principal={user.principal}
+                      status={user.status}
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      isApproving={pendingActions[user.principal.toString()] === 'approving'}
+                      isRejecting={pendingActions[user.principal.toString()] === 'rejecting'}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="approved">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Approved Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {approvalsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : approvedUsers.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <UserCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>No approved users yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {approvedUsers.map((user) => (
+                    <UserRow
+                      key={user.principal.toString()}
+                      principal={user.principal}
+                      status={user.status}
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      isApproving={pendingActions[user.principal.toString()] === 'approving'}
+                      isRejecting={pendingActions[user.principal.toString()] === 'rejecting'}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rejected">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Rejected Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {approvalsLoading ? (
+                <div className="space-y-3">
+                  {[1].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : rejectedUsers.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <UserX className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>No rejected users</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {rejectedUsers.map((user) => (
+                    <UserRow
+                      key={user.principal.toString()}
+                      principal={user.principal}
+                      status={user.status}
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      isApproving={pendingActions[user.principal.toString()] === 'approving'}
+                      isRejecting={pendingActions[user.principal.toString()] === 'rejecting'}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -116,22 +116,7 @@ export const idlService = IDL.Service({
       [SolarProject],
       [],
     ),
-  'adminAssignRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'adminGetAllUsers' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
-  'adminGetSystemStats' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'totalSolarProjects' : IDL.Nat,
-          'totalLeads' : IDL.Nat,
-          'totalReminders' : IDL.Nat,
-          'totalUsers' : IDL.Nat,
-          'totalCustomers' : IDL.Nat,
-          'totalDeals' : IDL.Nat,
-        }),
-      ],
-      ['query'],
-    ),
+  'approveUser' : IDL.Func([IDL.Principal], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
   'deleteDeal' : IDL.Func([IDL.Nat], [], []),
@@ -169,12 +154,14 @@ export const idlService = IDL.Service({
   'getFilteredReminders' : IDL.Func([IDL.Bool], [IDL.Vec(Reminder)], ['query']),
   'getLead' : IDL.Func([IDL.Nat], [IDL.Opt(Lead)], ['query']),
   'getOverdueReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
+  'getPendingApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
   'getProjectCountByStatus' : IDL.Func(
       [],
       [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat],
       ['query'],
     ),
   'getSolarProject' : IDL.Func([IDL.Nat], [IDL.Opt(SolarProject)], ['query']),
+  'getSuperAdminPrincipal' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
   'getUpcomingReminders' : IDL.Func([Time], [IDL.Vec(Reminder)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -186,6 +173,7 @@ export const idlService = IDL.Service({
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
   'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
   'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
+  'rejectUser' : IDL.Func([IDL.Principal], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text],
@@ -349,22 +337,7 @@ export const idlFactory = ({ IDL }) => {
         [SolarProject],
         [],
       ),
-    'adminAssignRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'adminGetAllUsers' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
-    'adminGetSystemStats' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'totalSolarProjects' : IDL.Nat,
-            'totalLeads' : IDL.Nat,
-            'totalReminders' : IDL.Nat,
-            'totalUsers' : IDL.Nat,
-            'totalCustomers' : IDL.Nat,
-            'totalDeals' : IDL.Nat,
-          }),
-        ],
-        ['query'],
-      ),
+    'approveUser' : IDL.Func([IDL.Principal], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
     'deleteDeal' : IDL.Func([IDL.Nat], [], []),
@@ -406,12 +379,22 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getLead' : IDL.Func([IDL.Nat], [IDL.Opt(Lead)], ['query']),
     'getOverdueReminders' : IDL.Func([], [IDL.Vec(Reminder)], ['query']),
+    'getPendingApprovals' : IDL.Func(
+        [],
+        [IDL.Vec(UserApprovalInfo)],
+        ['query'],
+      ),
     'getProjectCountByStatus' : IDL.Func(
         [],
         [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat],
         ['query'],
       ),
     'getSolarProject' : IDL.Func([IDL.Nat], [IDL.Opt(SolarProject)], ['query']),
+    'getSuperAdminPrincipal' : IDL.Func(
+        [],
+        [IDL.Opt(IDL.Principal)],
+        ['query'],
+      ),
     'getUpcomingReminders' : IDL.Func([Time], [IDL.Vec(Reminder)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -423,6 +406,7 @@ export const idlFactory = ({ IDL }) => {
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
     'markReminderOverdue' : IDL.Func([IDL.Nat], [], []),
     'moveDealStage' : IDL.Func([IDL.Nat, DealStage], [Deal], []),
+    'rejectUser' : IDL.Func([IDL.Principal], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],

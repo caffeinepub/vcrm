@@ -1,7 +1,7 @@
 import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -12,20 +12,32 @@ import DealsPage from './pages/DealsPage';
 import RemindersPage from './pages/RemindersPage';
 import SolarProjectsPage from './pages/SolarProjectsPage';
 import SolarProjectDetailPage from './pages/SolarProjectDetailPage';
-import AdminPage from './pages/AdminPage';
-import AccessDeniedPage from './pages/AccessDeniedPage';
 import ProfilePage from './pages/ProfilePage';
+import AccessDeniedPage from './pages/AccessDeniedPage';
+import AdminPage from './pages/AdminPage';
+
+const queryClient = new QueryClient();
 
 // Root route
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-// Login route
+// Login route (public)
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: LoginPage,
+});
+
+// Index redirect
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard' });
+  },
+  component: () => null,
 });
 
 // Protected layout route
@@ -33,15 +45,6 @@ const layoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'layout',
   component: Layout,
-});
-
-const indexRoute = createRoute({
-  getParentRoute: () => layoutRoute,
-  path: '/',
-  beforeLoad: () => {
-    throw redirect({ to: '/dashboard' });
-  },
-  component: () => null,
 });
 
 const dashboardRoute = createRoute({
@@ -92,12 +95,6 @@ const solarProjectDetailRoute = createRoute({
   component: SolarProjectDetailPage,
 });
 
-const adminRoute = createRoute({
-  getParentRoute: () => layoutRoute,
-  path: '/admin',
-  component: AdminPage,
-});
-
 const profileRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/profile',
@@ -105,16 +102,21 @@ const profileRoute = createRoute({
 });
 
 const accessDeniedRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => layoutRoute,
   path: '/access-denied',
   component: AccessDeniedPage,
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/admin',
+  component: AdminPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  accessDeniedRoute,
+  indexRoute,
   layoutRoute.addChildren([
-    indexRoute,
     dashboardRoute,
     leadsRoute,
     customersRoute,
@@ -123,8 +125,9 @@ const routeTree = rootRoute.addChildren([
     remindersRoute,
     solarProjectsRoute,
     solarProjectDetailRoute,
-    adminRoute,
     profileRoute,
+    accessDeniedRoute,
+    adminRoute,
   ]),
 ]);
 
@@ -136,28 +139,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-function AppInner() {
-  const { isInitializing } = useInternetIdentity();
-
-  if (isInitializing) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading VCRM...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <RouterProvider router={router} />;
-}
-
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AppInner />
-      <Toaster richColors position="top-right" />
+    <ThemeProvider attribute="class" defaultTheme="light">
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

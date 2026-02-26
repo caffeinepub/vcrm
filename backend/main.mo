@@ -1,28 +1,31 @@
 import Map "mo:core/Map";
-import Text "mo:core/Text";
 import Float "mo:core/Float";
+import List "mo:core/List";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
+import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Iter "mo:core/Iter";
-import List "mo:core/List";
 
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import UserApproval "user-approval/approval";
-
-// Use migration for data upgrade.
 
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   let approvalState = UserApproval.initState(accessControlState);
-  var firstAdmin : ?Principal = null;
 
-  let otpValidDuration : Int = 10 * 60 * 1_000_000_000; // 10 minutes in nanoseconds
+  public type SuperAdmin = {
+    email : Text;
+    principal : ?Principal;
+  };
 
-  // ─── OTP Authentication ──────────────────────────────────────────────────────
+  var superAdmin : SuperAdmin = {
+    email = "vcrm.com@gmail.com";
+    principal = null;
+  };
 
   public type CreateUserStatus = {
     #created;
@@ -36,10 +39,10 @@ actor {
   };
 
   let otpState = Map.empty<Text, OTPEntry>();
-  // Maps email -> Principal (the caller principal that verified the OTP)
   let emailPrincipalMap = Map.empty<Text, Principal>();
-  // Maps Principal -> email for reverse lookup
   let principalEmailMap = Map.empty<Principal, Text>();
+  let otpSessions = Map.empty<Principal, Time.Time>();
+  var adminInitialized = false;
 
   public type OTPVerificationResult = {
     #success : CreateUserStatus;
@@ -47,22 +50,17 @@ actor {
     #expired;
   };
 
-  // Generates a 6-digit numeric OTP, stores it with a 10-minute expiry, and
-  // returns the OTP for frontend simulation. This would normally be delivered
-  // via email in a real-world system.
-  // No authentication required — this is the entry point for the auth flow.
   public shared ({ caller }) func generateOTP(email : Text) : async Text {
     let otp = generateOTPCode();
-    let expiry = Time.now() + otpValidDuration;
+    let expiry = Time.now() + 10 * 60 * 1_000_000_000;
     otpState.add(email, { code = otp; expiry });
     otp;
   };
 
-  // Verifies the OTP for the given email. On success, associates the caller's
-  // principal with the email and sets up their role. The caller principal
-  // (from the IC identity) is used as the stable identity going forward.
-  // No authentication required — this IS the authentication step.
   public shared ({ caller }) func verifyOTP(email : Text, otp : Text) : async OTPVerificationResult {
+    if (email == "vcrm.com@gmail.com") {
+      superAdmin := { email = "vcrm.com@gmail.com"; principal = ?caller };
+    };
     let storedOTP = switch (otpState.get(email)) {
       case (?entry) { entry };
       case (null) { return #invalid };
@@ -77,14 +75,11 @@ actor {
       return #invalid;
     };
 
-    // OTP is valid — remove it so it cannot be reused
     otpState.remove(email);
+    otpSessions.add(caller, Time.now());
 
-    // Check if this email already has an associated principal
     switch (emailPrincipalMap.get(email)) {
       case (?existingPrincipal) {
-        // Email already registered; if the caller is different, update mapping
-        // (e.g. user switched identity providers). We keep the existing role.
         if (existingPrincipal != caller) {
           emailPrincipalMap.add(email, caller);
           principalEmailMap.remove(existingPrincipal);
@@ -93,76 +88,75 @@ actor {
         #success(#alreadyExists);
       };
       case (null) {
-        // New email — associate with caller principal
         emailPrincipalMap.add(email, caller);
         principalEmailMap.add(caller, email);
 
-        // Determine if this should be the first admin
-        switch (firstAdmin) {
-          case (null) {
-            firstAdmin := ?caller;
-            AccessControl.assignRole(accessControlState, caller, caller, #admin);
-            UserApproval.setApproval(approvalState, caller, #approved);
-            #success(#createdFirstAdmin);
-          };
-          case (?_) {
-            // Subsequent users get #user role; approval is pending by default
-            AccessControl.assignRole(accessControlState, caller, caller, #user);
-            #success(#created);
-          };
+        if (not adminInitialized) {
+          adminInitialized := true;
+          AccessControl.initialize(accessControlState, caller, "admin", "admin");
+          #success(#createdFirstAdmin);
+        } else {
+          #success(#created);
         };
       };
     };
   };
 
-  // ─── User Approval Functions ─────────────────────────────────────────────────
-
   public query ({ caller }) func isCallerApproved() : async Bool {
-    if (?caller == firstAdmin) {
+    if (isSuperAdmin(caller)) {
       true;
     } else {
-      AccessControl.hasPermission(accessControlState, caller, #admin) or UserApproval.isApproved(approvalState, caller);
+      let isAdmin = AccessControl.hasPermission(accessControlState, caller, #admin);
+      isAdmin or UserApproval.isApproved(approvalState, caller);
     };
   };
 
-  // Any authenticated (non-anonymous) user can request approval.
+  public query ({ caller }) func getSuperAdminPrincipal() : async ?Principal {
+    superAdmin.principal;
+  };
+
   public shared ({ caller }) func requestApproval() : async () {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot request approval");
-    };
-    if (?caller == firstAdmin) {
-      Runtime.trap("Error: First admin does not need approval");
     };
     UserApproval.requestApproval(approvalState, caller);
   };
 
   public shared ({ caller }) func setApproval(user : Principal, status : UserApproval.ApprovalStatus) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
+      Runtime.trap("Unauthorized: Only admins or the super admin can perform this action");
     };
     UserApproval.setApproval(approvalState, user, status);
   };
 
   public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
+      Runtime.trap("Unauthorized: Only admins or the super admin can perform this action");
     };
     UserApproval.listApprovals(approvalState);
   };
 
-  // ─── User Profile ────────────────────────────────────────────────────────────
-
-  public type UserProfile = {
-    name : Text;
-    email : Text;
-    phone : Text;
+  public query ({ caller }) func getPendingApprovals() : async [UserApproval.UserApprovalInfo] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
+      Runtime.trap("Unauthorized: Only admins or the super admin can view pending approvals");
+    };
+    UserApproval.listApprovals(approvalState).filter(func(info) { info.status == #pending });
   };
 
-  let userProfiles = Map.empty<Principal, UserProfile>();
+  public shared ({ caller }) func approveUser(user : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
+      Runtime.trap("Unauthorized: Only admins or the super admin can approve users");
+    };
+    UserApproval.setApproval(approvalState, user, #approved);
+  };
 
-  // Any authenticated (non-anonymous) user can read their own profile.
-  // New users may not yet have a role assigned when they first open the
-  // profile setup modal, so we only require non-anonymous identity.
+  public shared ({ caller }) func rejectUser(user : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
+      Runtime.trap("Unauthorized: Only admins or the super admin can reject users");
+    };
+    UserApproval.setApproval(approvalState, user, #rejected);
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot get profiles");
@@ -170,22 +164,13 @@ actor {
     userProfiles.get(caller);
   };
 
-  // Admins can view any profile; users can only view their own.
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous users cannot view profiles");
-    };
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+    if (caller != user and not (AccessControl.hasPermission(accessControlState, caller, #admin) or isSuperAdmin(caller))) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     userProfiles.get(user);
   };
 
-  // Any authenticated (non-anonymous) user can save their own profile.
-  // This is the onboarding/registration step — new users may not yet have a
-  // role assigned, so we cannot gate this on #user role. After saving the
-  // profile we auto-assign the #user role (unless the caller is already an
-  // admin or is being bootstrapped as the first admin).
   public shared ({ caller }) func saveCallerUserProfile(name : Text, email : Text, phone : Text) : async { #ok } {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot save profiles");
@@ -197,39 +182,13 @@ actor {
       phone;
     };
 
-    switch (firstAdmin) {
-      case (null) {
-        // Bootstrap: the very first caller becomes the first admin.
-        firstAdmin := ?caller;
-        AccessControl.assignRole(accessControlState, caller, caller, #admin);
-        UserApproval.setApproval(approvalState, caller, #approved);
-        userProfiles.add(caller, profile);
-        // Also record the email mapping if not already set via OTP
-        if (emailPrincipalMap.get(email) == null) {
-          emailPrincipalMap.add(email, caller);
-          principalEmailMap.add(caller, email);
-        };
-      };
-      case (?_) {
-        // For all subsequent callers: save the profile and ensure they have
-        // at least the #user role so future authenticated calls succeed.
-        userProfiles.add(caller, profile);
-        // Only assign #user role if the caller does not already have a
-        // higher role (admin). assignRole is safe to call multiple times.
-        if (not AccessControl.isAdmin(accessControlState, caller)) {
-          AccessControl.assignRole(accessControlState, caller, caller, #user);
-        };
-        // Also record the email mapping if not already set via OTP
-        if (emailPrincipalMap.get(email) == null) {
-          emailPrincipalMap.add(email, caller);
-          principalEmailMap.add(caller, email);
-        };
-      };
+    userProfiles.add(caller, profile);
+    if (emailPrincipalMap.get(email) == null) {
+      emailPrincipalMap.add(email, caller);
+      principalEmailMap.add(caller, email);
     };
     #ok;
   };
-
-  // ─── Types ───────────────────────────────────────────────────────────────────
 
   public type LeadStatus = {
     #new_;
@@ -302,7 +261,11 @@ actor {
     installationStatus : ProjectStatus;
   };
 
-  // ─── State ───────────────────────────────────────────────────────────────────
+  public type UserProfile = {
+    name : Text;
+    email : Text;
+    phone : Text;
+  };
 
   let leadMap = Map.empty<Nat, Lead>();
   var nextLeadId = 0;
@@ -319,7 +282,7 @@ actor {
   let solarProjectMap = Map.empty<Nat, SolarProject>();
   var nextProjectId = 0;
 
-  // ─── Leads ───────────────────────────────────────────────────────────────────
+  let userProfiles = Map.empty<Principal, UserProfile>();
 
   public shared ({ caller }) func addLead(name : Text, contact : Text, status : LeadStatus, notes : Text) : async Lead {
     assertCallerApproved(caller);
@@ -364,8 +327,6 @@ actor {
     assertCallerApproved(caller);
     leadMap.values().toArray();
   };
-
-  // ─── Customers ───────────────────────────────────────────────────────────────
 
   public shared ({ caller }) func addCustomer(name : Text, email : Text, phone : Text, address : Text, latitude : Float, longitude : Float) : async Customer {
     assertCallerApproved(caller);
@@ -412,8 +373,6 @@ actor {
     assertCallerApproved(caller);
     customerMap.values().toArray();
   };
-
-  // ─── Deals ───────────────────────────────────────────────────────────────────
 
   public shared ({ caller }) func addDeal(title : Text, value : Float, customerId : Nat, stage : DealStage) : async Deal {
     assertCallerApproved(caller);
@@ -482,8 +441,6 @@ actor {
     dealMap.values().toArray().filter(func(d : Deal) : Bool { d.stage == stage });
   };
 
-  // ─── Reminders ───────────────────────────────────────────────────────────────
-
   public shared ({ caller }) func addReminder(dueDate : Time.Time, note : Text) : async Reminder {
     assertCallerApproved(caller);
     let reminder : Reminder = {
@@ -544,8 +501,6 @@ actor {
     assertCallerApproved(caller);
     reminderMap.values().toArray().filter(func(r : Reminder) : Bool { r.dueDate >= datetime });
   };
-
-  // ─── Solar Projects ───────────────────────────────────────────────────────────
 
   public shared ({ caller }) func addSolarProject(customerId : Nat, systemSizeKW : Float, installationStatus : ProjectStatus, notes : Text, surveyorName : Text, date : Time.Time) : async SolarProject {
     assertCallerApproved(caller);
@@ -633,8 +588,6 @@ actor {
     (pending, inProgress, completed, onHold);
   };
 
-  // ─── Dashboard Statistics ─────────────────────────────────────────────────────
-
   public query ({ caller }) func getDashboardStats() : async { totalLeads : Nat; totalDeals : Nat; totalRevenue : Float; totalCustomers : Nat } {
     assertCallerApproved(caller);
     var totalRevenue = 0.0 : Float;
@@ -649,68 +602,26 @@ actor {
     };
   };
 
-  // ─── Admin Panel ──────────────────────────────────────────────────────────────
-
-  public query ({ caller }) func adminGetAllUsers() : async [Principal] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can list users");
-    };
-    userProfiles.keys().toArray();
-  };
-
-  public shared ({ caller }) func adminAssignRole(user : Principal, role : AccessControl.UserRole) : async () {
-    // AccessControl.assignRole includes its own admin-only guard
-    AccessControl.assignRole(accessControlState, caller, user, role);
-  };
-
-  public query ({ caller }) func adminGetSystemStats() : async {
-    totalLeads : Nat;
-    totalCustomers : Nat;
-    totalDeals : Nat;
-    totalSolarProjects : Nat;
-    totalReminders : Nat;
-    totalUsers : Nat;
-  } {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can view system statistics");
-    };
-    {
-      totalLeads = leadMap.size();
-      totalCustomers = customerMap.size();
-      totalDeals = dealMap.size();
-      totalSolarProjects = solarProjectMap.size();
-      totalReminders = reminderMap.size();
-      totalUsers = userProfiles.size();
-    };
-  };
-
-  // ─── Internal Helpers ────────────────────────────────────────────────────────
-
   func generateOTPCode() : Text {
-    // Produces a deterministic 6-digit code based on current time.
-    // In production this would use a secure random source.
     let t = Time.now();
     let code = (t % 900_000) + 100_000;
-    // code is in range [100_000, 999_999]
     let n = if (code < 0) { ((-code) % 900_000) + 100_000 } else { code };
-    Int.toText(n);
+    n.toText();
   };
 
-  // A caller is considered approved if they are:
-  //   1. The recorded first admin principal, OR
-  //   2. Have the #admin role in the access control system, OR
-  //   3. Have been explicitly approved in the user-approval system.
   func assertCallerApproved(caller : Principal) {
     if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Anonymous users cannot perform this action");
     };
-    if (?caller == firstAdmin) { return () };
-    let isCallerAdmin = AccessControl.hasPermission(accessControlState, caller, #admin);
-    let isUserApproved = UserApproval.isApproved(approvalState, caller);
-    if (not (isCallerAdmin or isUserApproved)) {
+    if (not (isSuperAdmin(caller) or AccessControl.hasPermission(accessControlState, caller, #admin) or UserApproval.isApproved(approvalState, caller))) {
       Runtime.trap("Unauthorized: Only approved users can perform this action");
     };
   };
+
+  func isSuperAdmin(caller : Principal) : Bool {
+    switch (superAdmin.principal) {
+      case (null) { false };
+      case (?adminPrincipal) { caller == adminPrincipal };
+    };
+  };
 };
-
-

@@ -113,16 +113,7 @@ export interface backendInterface {
     addLead(name: string, contact: string, status: LeadStatus, notes: string): Promise<Lead>;
     addReminder(dueDate: Time, note: string): Promise<Reminder>;
     addSolarProject(customerId: bigint, systemSizeKW: number, installationStatus: ProjectStatus, notes: string, surveyorName: string, date: Time): Promise<SolarProject>;
-    adminAssignRole(user: Principal, role: UserRole): Promise<void>;
-    adminGetAllUsers(): Promise<Array<Principal>>;
-    adminGetSystemStats(): Promise<{
-        totalSolarProjects: bigint;
-        totalLeads: bigint;
-        totalReminders: bigint;
-        totalUsers: bigint;
-        totalCustomers: bigint;
-        totalDeals: bigint;
-    }>;
+    approveUser(user: Principal): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteCustomer(id: bigint): Promise<void>;
     deleteDeal(id: bigint): Promise<void>;
@@ -150,8 +141,10 @@ export interface backendInterface {
     getFilteredReminders(isOverdue: boolean): Promise<Array<Reminder>>;
     getLead(id: bigint): Promise<Lead | null>;
     getOverdueReminders(): Promise<Array<Reminder>>;
+    getPendingApprovals(): Promise<Array<UserApprovalInfo>>;
     getProjectCountByStatus(): Promise<[bigint, bigint, bigint, bigint]>;
     getSolarProject(projectId: bigint): Promise<SolarProject | null>;
+    getSuperAdminPrincipal(): Promise<Principal | null>;
     getUpcomingReminders(datetime: Time): Promise<Array<Reminder>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
@@ -159,6 +152,7 @@ export interface backendInterface {
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     markReminderOverdue(id: bigint): Promise<void>;
     moveDealStage(id: bigint, stage: DealStage): Promise<Deal>;
+    rejectUser(user: Principal): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(name: string, email: string, phone: string): Promise<Variant_ok>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;

@@ -1,20 +1,30 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Project involves a web app with Gmail OTP login, user approval flow, and an Admin Panel. vcrm.com@gmail.com is hardcoded as Super Admin who bypasses approval and can approve/reject other users from a dedicated Admin Panel.",
   "architectural_notes": [
-    "Profile save error: `saveCallerUserProfile` backend function not connecting properly with frontend — possible stale actor reference or Candid type mismatch causing 'Unable to save profile' error"
+    "Gmail OTP used for login/authentication",
+    "User approval flow: new users land on 'Access Pending Approval' screen until approved by Admin",
+    "vcrm.com@gmail.com is hardcoded Super Admin — always auto-approved, no pending screen"
   ],
   "known_issues": [
-    "Profile Setup modal throws 'Unable to save profile. Please try again.' error when saving name, email, and phone number"
+    "Admin account (vcrm.com@gmail.com) was stuck on 'Access Pending Approval' screen instead of going to Dashboard"
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-profilesetupmodal-component-to-correctly-invoke-the-backend-actor-s-savecalleruserprofile-function-ensure-the-actor-reference-is-fresh-not-stale-argument-types-match-the-current-candid-interface-and-all-error-cases-surface-a-meaningful-message-on-success-dismiss-the-modal-and-proceed-to-the-dashboard",
-      "title": "Fix the ProfileSetupModal component to correctly invoke the backend actor's `saveCallerUserProfile` function. Ensure the actor reference is fresh (not stale), argument types match the current Candid interface, and all error cases surface a meaningful message. On success, dismiss the modal and proceed to the dashboard.",
+      "id": "feature-fix-the-auth-guard-in-frontend-src-components-layout-tsx-so-that-when-the-logged-in-user-s-email-is-vcrm-com-gmail-com-or-their-role-is-admin-owner-they-are-redirected-directly-to-the-dashboard-and-never-shown-the-access-pending-approval-screen",
+      "title": "Fix the auth guard in `frontend/src/components/Layout.tsx` so that when the logged-in user's email is `vcrm.com@gmail.com` or their role is admin/owner, they are redirected directly to the Dashboard and never shown the 'Access Pending Approval' screen.",
       "reqIds": [
-        "REQ-2"
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-fully-functional-admin-panel-page-at-frontend-src-pages-adminpage-tsx-this-page-must-display-a-list-of-all-pending-users-name-email-registration-date-provide-approve-and-reject-buttons-per-user-show-approved-and-rejected-users-in-separate-tabs-or-sections-and-be-accessible-only-to-the-super-admin-admin-role-users-add-a-navigation-link-to-this-panel-in-the-sidebar-layout-tsx-visible-only-to-admins",
+      "title": "Build a fully functional Admin Panel page at `frontend/src/pages/AdminPage.tsx`. This page must: display a list of all pending users (name, email, registration date), provide Approve and Reject buttons per user, show approved and rejected users in separate tabs or sections, and be accessible only to the Super Admin / admin-role users. Add a navigation link to this panel in the sidebar (`Layout.tsx`) visible only to admins.",
+      "reqIds": [
+        "REQ-4"
       ],
       "version": 1
     }
@@ -22,14 +32,35 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix the backend `saveCallerUserProfile` function to correctly accept and store name, email, and phone fields. Ensure the Candid type signature matches what the frontend sends, and that the function returns a success result without throwing or returning an error variant.",
+      "summary": "Hardcode vcrm.com@gmail.com as Super Admin who bypasses 'Access Pending Approval' screen and goes directly to Dashboard",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Admin Panel where Super Admin can view pending users and approve or reject them; approved users get Dashboard access, rejected users are blocked",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "In the backend, hardcode `vcrm.com@gmail.com` as a Super Admin. When a user with this email logs in via OTP, their account must be automatically treated as approved with an admin/owner role — bypassing the 'Access Pending Approval' check entirely. The approval status check logic must explicitly whitelist this email so it is never routed to the pending approval screen.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "In the backend, add or fix admin query and mutation functions to: (1) list all users whose approval status is 'pending', (2) approve a user by principal/email so their status becomes approved, and (3) reject a user by principal/email so their status becomes rejected/blocked. Only the Super Admin (vcrm.com@gmail.com) or users with admin role should be able to call these functions.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Fix Profile Setup modal 'Unable to save profile' error",
+  "gameProjectType": "none",
+  "projectName": "VCRM Solar CRM",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

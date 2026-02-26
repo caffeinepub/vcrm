@@ -1,27 +1,55 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Profile Setup modal 'Unable to save profile' error",
+  "title": "Frontend: Super Admin Auth Guard & Admin Panel for User Approval",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Fix the ProfileSetupModal component to correctly invoke the backend actor's saveCallerUserProfile function with proper actor handling and error display",
+      "id": "REQ-3",
+      "summary": "Fix Layout.tsx auth guard so vcrm.com@gmail.com or admin role users skip 'Access Pending Approval' screen and go directly to Dashboard",
       "acceptanceCriteria": [
-        "Submitting the profile form with name, email, and phone successfully saves the profile and closes the modal",
-        "The user is redirected to the dashboard after a successful save",
-        "If the backend returns an error, the error message is displayed clearly inside the modal",
-        "The actor used in the mutation is always the latest authenticated instance"
+        "After OTP login with vcrm.com@gmail.com, the user is immediately on the Dashboard page",
+        "The 'Access Pending Approval' screen is never displayed to the Super Admin user",
+        "Other non-approved users still see the 'Access Pending Approval' screen"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "path": "frontend/src/components/Layout.tsx",
           "operation": "modify",
-          "description": "Fix the saveCallerUserProfile mutation to pass name, email, and phone as three separate string arguments (not as an object). Update the mutation call in handleSubmit to match the backend Candid signature: actor.saveCallerUserProfile(formData.name, formData.email, formData.phone). Ensure the actor is fetched fresh from useActor at mutation time. Handle both the #ok success variant and potential error results from the backend, displaying any error message clearly in the UI. On success, invalidate the currentUserProfile query and allow the Layout component to handle navigation."
+          "description": "Update the conditional logic that checks approval status. Add an early check: if the user's email is 'vcrm.com@gmail.com' (obtained from userProfile) OR if userRole is 'admin', redirect to '/dashboard' and skip the pending approval screen entirely. Ensure non-admin, non-approved users still see the 'Access Pending Approval' message. Use backend methods isCallerApproved and getCallerUserRole to determine approval and role status."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Build a fully functional Admin Panel page with pending/approved/rejected user lists, Approve/Reject actions, and admin-only sidebar link",
+      "acceptanceCriteria": [
+        "Admin Panel page lists all pending users with name, email, and an Approve/Reject action per user",
+        "Clicking Approve changes the user's status and moves them out of the pending list",
+        "Clicking Reject blocks the user and removes them from the pending list",
+        "The page shows separate sections or tabs for Pending, Approved, and Rejected users",
+        "The Admin Panel link appears in the sidebar only for admin/owner role users",
+        "Non-admin users cannot navigate to or access the Admin Panel page"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AdminPage.tsx",
+          "operation": "create",
+          "description": "Create a full admin panel page that: (1) Calls listApprovals() from the backend to fetch all users and their approval status. (2) Displays three separate sections or tabs for Pending, Approved, and Rejected users. (3) For each pending user, shows their principal (or email if available via getUserProfile), and provides Approve and Reject buttons. (4) On Approve, calls setApproval(user, { approved }) and refetches the list. (5) On Reject, calls setApproval(user, { rejected }) and refetches. (6) Uses TanStack Query hooks from useQueries.ts (useListApprovals, useSetApproval) to interact with the backend. (7) Shows loading and error states. (8) Includes a guard at the top: if the user is not an admin (via getCallerUserRole or isCallerAdmin), show an AccessDeniedPage or redirect to /dashboard. Use the authorization component's backend methods to verify admin role. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/Layout.tsx",
+          "operation": "modify",
+          "description": "Add a new navigation link in the sidebar for 'Admin Panel' that routes to '/admin'. Conditionally render this link only when the user's role is 'admin' (use getCallerUserRole from the backend). Place the link below 'Solar Projects' and above 'Profile'. Use the same icon pattern as other sidebar items (e.g., a shield or user-check icon)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Register a new route for '/admin' that renders the AdminPage component. Ensure it follows the same lazy-loading or direct-import pattern used for other pages in the router configuration."
         },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the useSaveCallerUserProfile mutation hook to accept three separate string parameters (name: string, email: string, phone: string) instead of a UserProfile object. Ensure the mutation function calls actor.saveCallerUserProfile(name, email, phone) with these three arguments to match the backend Candid interface. Preserve all error handling and query invalidation logic."
+          "description": "Add TanStack Query hooks for admin operations if not already present: useListApprovals (query that calls listApprovals()), useSetApproval (mutation that calls setApproval(user, status) and invalidates the listApprovals query), and useGetUserProfile (query that calls getUserProfile(user) to fetch individual user profiles by principal). Ensure these hooks return proper loading, error, and data states, and follow the existing pattern in the file."
         }
       ]
     }
